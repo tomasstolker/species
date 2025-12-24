@@ -1,3 +1,8 @@
+"""
+Module with a function for adding manual PHOENIX
+evolutionary tracks to the database.
+"""
+
 import h5py
 import numpy as np
 

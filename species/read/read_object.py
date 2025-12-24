@@ -37,8 +37,8 @@ class ReadObject:
 
         self.object_name = object_name
 
-        if 'SPECIES_CONFIG' in os.environ:
-            config_file = os.environ['SPECIES_CONFIG']
+        if "SPECIES_CONFIG" in os.environ:
+            config_file = os.environ["SPECIES_CONFIG"]
         else:
             config_file = os.path.join(os.getcwd(), "species_config.ini")
 

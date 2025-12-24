@@ -1,5 +1,5 @@
 """
-Module for isochrone data from evolutionary models.
+Module adding evolutionary tracks to the database.
 """
 
 from typing import Optional
@@ -42,8 +42,8 @@ def add_isochrone_grid(
         Database.
     model_name : str, None
         Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
-        'baraffe2015', 'bt-settl', 'linder2019', 'nextgen',
-        'parsec', 'saumon2008', 'sonora-bobcat',
+        'baraffe2015', 'bt-settl', 'linder2019', 'marleau',
+        'nextgen', 'parsec', 'saumon2008', 'sonora-bobcat',
         'sonora-diamondback'). Isochrones will be automatically
         downloaded. Alternatively, the ``filename`` parameter
         can be used in combination with ``tag``.
@@ -88,7 +88,7 @@ def add_isochrone_grid(
         add_linder2019(hdf5_file, data_folder)
 
     elif model_name == "marleau":
-        add_marleau(hdf5_file, tag, filename)
+        add_marleau(hdf5_file, data_folder)
 
     elif model_name == "nextgen":
         add_nextgen(hdf5_file, data_folder)

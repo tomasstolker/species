@@ -1,3 +1,8 @@
+"""
+Module with a function for adding the Baraffe et al. (2015)
+evolutionary tracks to the database.
+"""
+
 from pathlib import Path
 
 import h5py

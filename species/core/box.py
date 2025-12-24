@@ -116,6 +116,7 @@ class CoolingBox(Box):
         self.log_lum = None
         self.logg = None
         self.radius = None
+        self.s_init = None
         self.filter_mag = None
         self.magnitude = None
         self.filters_color = None
@@ -143,6 +144,7 @@ class IsochroneBox(Box):
         self.log_lum = None
         self.logg = None
         self.radius = None
+        self.s_init = None
         self.filter_mag = None
         self.magnitude = None
         self.filters_color = None
@@ -484,6 +486,8 @@ def create_box(boxtype, **kwargs):
         box.log_lum = kwargs["log_lum"]
         box.logg = kwargs["logg"]
         box.radius = kwargs["radius"]
+        if "s_init" in kwargs:
+            box.s_init = kwargs["s_init"]
         box.filter_mag = kwargs["filter_mag"]
         box.magnitude = kwargs["magnitude"]
         box.filters_color = kwargs["filters_color"]
@@ -501,6 +505,8 @@ def create_box(boxtype, **kwargs):
         box.log_lum = kwargs["log_lum"]
         box.logg = kwargs["logg"]
         box.radius = kwargs["radius"]
+        if "s_init" in kwargs:
+            box.s_init = kwargs["s_init"]
         box.filter_mag = kwargs["filter_mag"]
         box.magnitude = kwargs["magnitude"]
         box.filters_color = kwargs["filters_color"]

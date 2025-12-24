@@ -1,3 +1,8 @@
+"""
+Module with a function for adding the NextGen
+evolutionary tracks to the database.
+"""
+
 from pathlib import Path
 
 import h5py

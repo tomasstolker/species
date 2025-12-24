@@ -567,8 +567,8 @@ class Database:
         ----------
         model : str, None
             Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
-            'baraffe2015', 'bt-settl', linder2019', 'nextgen',
-            'parsec', 'saumon2008', 'sonora-bobcat',
+            'baraffe2015', 'bt-settl', linder2019', 'marleau',
+            'nextgen', 'parsec', 'saumon2008', 'sonora-bobcat',
             'sonora-diamondback'). Isochrones will be automatically
             downloaded. Alternatively, the ``filename`` parameter
             can be used in combination with ``tag``.
@@ -609,6 +609,7 @@ class Database:
             "baraffe2015",
             "bt-settl",
             "linder2019",
+            "marleau",
             "nextgen",
             "parsec",
             "saumon2008",
@@ -659,6 +660,10 @@ class Database:
                     for iso_item in list(hdf5_file["isochrones"]):
                         if iso_item[:10] == "linder2019":
                             del hdf5_file[f"isochrones/{iso_item}"]
+
+            elif model == "marleau":
+                if "isochrones/marleau" in hdf5_file:
+                    del hdf5_file["isochrones/marleau"]
 
             elif model == "nextgen":
                 if "isochrones/nextgen" in hdf5_file:

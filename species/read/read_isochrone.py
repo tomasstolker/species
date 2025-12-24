@@ -107,8 +107,8 @@ class ReadIsochrone:
             print(f"Database tag: {self.tag}")
             print(f"Create regular grid: {self.create_regular_grid}")
 
-        if 'SPECIES_CONFIG' in os.environ:
-            config_file = os.environ['SPECIES_CONFIG']
+        if "SPECIES_CONFIG" in os.environ:
+            config_file = os.environ["SPECIES_CONFIG"]
         else:
             config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -233,6 +233,7 @@ class ReadIsochrone:
         self.logg_interp = None
         self.radius_interp = None
         self.mass_interp = None
+        self.sinit_interp = None
         self.interp_method = interp_method
 
         if self.interp_method not in ["linear", "cubic"]:
@@ -252,6 +253,7 @@ class ReadIsochrone:
         np.ndarray,
         np.ndarray,
         np.ndarray,
+        Optional[np.ndarray],
         Optional[np.ndarray],
     ]:
         """
@@ -274,6 +276,9 @@ class ReadIsochrone:
             Array with the :math:`\\log{(g)}`.
         np.ndarray
             Array with the radius (:math:`R_\\mathrm{J}`).
+        np.ndarray
+            Optional array with the initial entropy
+            (:math:`k_B/\\mathrm{baryon}`).
         np.ndarray, None
             Optional array with the absolute magnitudes. The
             array has two axes with the length of the second
@@ -285,7 +290,10 @@ class ReadIsochrone:
         new_mag = None
 
         with h5py.File(self.database, "r") as hdf5_file:
-            model_name = hdf5_file[f"isochrones/{self.tag}/age"].attrs["model"]
+            if "model" in hdf5_file[f"isochrones/{self.tag}"].attrs:
+                model_name = hdf5_file[f"isochrones/{self.tag}"].attrs["model"]
+            else:
+                model_name = hdf5_file[f"isochrones/{self.tag}/age"].attrs["model"]
 
             iso_age = np.asarray(hdf5_file[f"isochrones/{self.tag}/age"])
             iso_mass = np.asarray(hdf5_file[f"isochrones/{self.tag}/mass"])
@@ -293,6 +301,11 @@ class ReadIsochrone:
             iso_loglum = np.asarray(hdf5_file[f"isochrones/{self.tag}/log_lum"])
             iso_logg = np.asarray(hdf5_file[f"isochrones/{self.tag}/log_g"])
             iso_radius = np.asarray(hdf5_file[f"isochrones/{self.tag}/radius"])
+
+            if "s_init" in hdf5_file[f"isochrones/{self.tag}"]:
+                iso_sinit = np.asarray(hdf5_file[f"isochrones/{self.tag}/s_init"])
+            else:
+                iso_sinit = None
 
             if f"isochrones/{self.tag}/magnitudes" in hdf5_file:
                 iso_mag = np.asarray(hdf5_file[f"isochrones/{self.tag}/magnitudes"])
@@ -391,6 +404,7 @@ class ReadIsochrone:
             iso_loglum,
             iso_logg,
             iso_radius,
+            iso_sinit,
             iso_mag,
         )
 
@@ -555,6 +569,7 @@ class ReadIsochrone:
             iso_loglum,
             iso_logg,
             iso_radius,
+            iso_sinit,
             iso_mag,
         ) = self._read_data()
 
@@ -566,6 +581,9 @@ class ReadIsochrone:
             "teff": iso_teff,
             "logg": iso_logg,
         }
+
+        if iso_sinit is not None:
+            grid_points["s_init"] = iso_sinit
 
         return grid_points
 
@@ -631,6 +649,7 @@ class ReadIsochrone:
             iso_loglum,
             iso_logg,
             iso_radius,
+            iso_sinit,
             iso_mag,
         ) = self._read_data()
 
@@ -788,6 +807,24 @@ class ReadIsochrone:
         else:
             radius = None
 
+        # Interpolation of initial entropy
+
+        s_init = None
+
+        if iso_sinit is not None:
+            if self.sinit_interp is None and (
+                param_interp is None or "s_init" in param_interp
+            ):
+                self.sinit_interp = grid_interp(
+                    points=grid_points,
+                    values=iso_sinit,
+                    fill_value="nan",
+                    rescale=False,
+                )
+
+            if self.sinit_interp is not None:
+                s_init = self.sinit_interp(np.stack((age_points, masses), axis=1))
+
         # Check if magnitude and color are found
 
         if mag_abs is None and filter_mag is not None:
@@ -821,6 +858,7 @@ class ReadIsochrone:
             logg=logg,
             radius=radius,
             masses=masses,
+            s_init=s_init,
         )
 
     @typechecked
@@ -878,6 +916,7 @@ class ReadIsochrone:
             iso_loglum,
             iso_logg,
             iso_radius,
+            iso_sinit,
             iso_mag,
         ) = self._read_data()
 
@@ -970,6 +1009,20 @@ class ReadIsochrone:
 
         radius = self.radius_interp(np.stack((ages, mass_points), axis=1))
 
+        if iso_sinit is not None:
+            if self.sinit_interp is None:
+                self.sinit_interp = grid_interp(
+                    points=grid_points,
+                    values=iso_sinit,
+                    fill_value="nan",
+                    rescale=False,
+                )
+
+            s_init = self.sinit_interp(np.stack((ages, mass_points), axis=1))
+
+        else:
+            s_init = None
+
         if mag_abs is None and filter_mag is not None:
             warnings.warn(
                 f"The isochrones of {self.tag} do not have "
@@ -1001,6 +1054,7 @@ class ReadIsochrone:
             teff=teff,
             logg=logg,
             radius=radius,
+            s_init=s_init,
         )
 
     @typechecked

@@ -1,3 +1,8 @@
+"""
+Module with a function for adding the Linder et al. (2019)
+evolutionary tracks to the database.
+"""
+
 from requests.exceptions import HTTPError
 from pathlib import Path
 

@@ -1,3 +1,8 @@
+"""
+Module with a function for adding the Sonora Diamondback
+evolutionary tracks to the database.
+"""
+
 from pathlib import Path
 from zipfile import ZipFile
 
