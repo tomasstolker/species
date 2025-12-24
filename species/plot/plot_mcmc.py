@@ -16,6 +16,7 @@ from matplotlib.ticker import ScalarFormatter
 from scipy.stats import norm
 
 from species.core import constants
+from species.read.read_model import ReadModel
 from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
 from species.util.plot_util import update_labels
@@ -54,6 +55,7 @@ def plot_posterior(
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
     show_priors: bool = False,
+    show_grid: bool = False,
     kwargs_corner: Optional[dict] = None,
 ) -> mpl.figure.Figure:
     """
@@ -121,11 +123,16 @@ def plot_posterior(
         will be included if the argument is set to ``None``.
     show_priors : bool
         Plot the normal priors in the diagonal panels together with the
-        1D marginalized posterior distributions. This will only show
-        the priors that had a normal distribution, so those that were
-        set with the ``normal_prior`` parameter in
+        1D marginalized posterior distributions (default: False). This
+        will only show the priors that had a normal distribution, so
+        those that were set with the ``normal_prior`` parameter in
         :class:`~species.fit.fit_model.FitModel` and
         :class:`~species.fit.retrieval.AtmosphericRetrieval.setup_retrieval`.
+    show_grid : bool
+        Show with lines for the grid points of the atmospheric model
+        on the 1D and 2D marginalized posteriors (default: False).
+        This parameter has only an effect for results obtained with
+        :class:`~species.fit.fit_model.FitModel.
     kwargs_corner : dict, None
         Dictionary with keyword arguments that can be used to adjust the
         parameters of the `corner() function
@@ -144,6 +151,7 @@ def plot_posterior(
 
     box = species_db.get_samples(tag)
     samples = box.samples
+    box.open_box()
 
     print_section("Plot posterior distributions")
 
@@ -1028,6 +1036,44 @@ def plot_posterior(
                 else:
                     ax.get_xaxis().set_label_coords(0.5, -0.26)
                     ax.get_yaxis().set_label_coords(-0.27, 0.5)
+
+    if (
+        show_grid
+        and box.attributes["model_type"] == "atmosphere"
+        and box.attributes["model_name"] != "petitradtrans"
+    ):
+        read_model = ReadModel(box.attributes["model_name"])
+        grid_points = read_model.get_points()
+
+        for i in range(ndim):
+            for j in range(ndim):
+                ax = axes[i, j]
+
+                if (i == j or i > j) and box_param[j] in grid_points:
+                    ax_ymin, ax_ymax = ax.get_ylim()
+
+                    ax.vlines(
+                        grid_points[box_param[j]],
+                        ymin=ax_ymin,
+                        ymax=ax_ymax,
+                        colors="cadetblue",
+                        linestyles=(0, (5, 10)),
+                        linewidth=0.8,
+                        zorder=1,
+                    )
+
+                elif i > j and box_param[i] in grid_points:
+                    ax_xmin, ax_xmax = ax.get_xlim()
+
+                    ax.hlines(
+                        grid_points[box_param[i]],
+                        xmin=ax_xmin,
+                        xmax=ax_xmax,
+                        colors="cadetblue",
+                        linestyles=(0, (5, 10)),
+                        linewidth=0.8,
+                        zorder=1,
+                    )
 
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)

@@ -79,8 +79,8 @@ def plot_statistic(
     else:
         print(f"Plotting goodness-of-fit statistic: {output}...", end="")
 
-    if 'SPECIES_CONFIG' in os.environ:
-        config_file = os.environ['SPECIES_CONFIG']
+    if "SPECIES_CONFIG" in os.environ:
+        config_file = os.environ["SPECIES_CONFIG"]
     else:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -266,8 +266,8 @@ def plot_empirical_spectra(
     if flux_offset is None:
         flux_offset = 0.0
 
-    if 'SPECIES_CONFIG' in os.environ:
-        config_file = os.environ['SPECIES_CONFIG']
+    if "SPECIES_CONFIG" in os.environ:
+        config_file = os.environ["SPECIES_CONFIG"]
     else:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -543,8 +543,8 @@ def plot_grid_statistic(
     else:
         print(f"Plotting goodness-of-fit of model grid: {output}...", end="")
 
-    if 'SPECIES_CONFIG' in os.environ:
-        config_file = os.environ['SPECIES_CONFIG']
+    if "SPECIES_CONFIG" in os.environ:
+        config_file = os.environ["SPECIES_CONFIG"]
     else:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -1055,8 +1055,8 @@ def plot_model_spectra(
     if flux_offset is None:
         flux_offset = 0.0
 
-    if 'SPECIES_CONFIG' in os.environ:
-        config_file = os.environ['SPECIES_CONFIG']
+    if "SPECIES_CONFIG" in os.environ:
+        config_file = os.environ["SPECIES_CONFIG"]
     else:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
