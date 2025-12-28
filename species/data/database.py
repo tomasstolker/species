@@ -713,8 +713,17 @@ class Database:
                         del hdf5_file[f"isochrones/sonora-diamondback-{iso_item}"]
 
             elif model == "spiegel2012":
-                if "isochrones/spiegel2012" in hdf5_file:
-                    del hdf5_file["isochrones/spiegel2012"]
+                if "isochrones/spiegel2012-hybrid+0.0" in hdf5_file:
+                    del hdf5_file["isochrones/spiegel2012-hybrid+0.0"]
+
+                if "isochrones/spiegel2012-hybrid+0.5" in hdf5_file:
+                    del hdf5_file["isochrones/spiegel2012-hybrid+0.5"]
+
+                if "isochrones/spiegel2012-cloudfree+0.0" in hdf5_file:
+                    del hdf5_file["isochrones/spiegel2012-cloudfree+0.0"]
+
+                if "isochrones/spiegel2012-cloudfree+0.5" in hdf5_file:
+                    del hdf5_file["isochrones/spiegel2012-cloudfree+0.5"]
 
             else:
                 if f"isochrones/{tag}" in hdf5_file:

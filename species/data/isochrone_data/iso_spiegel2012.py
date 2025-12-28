@@ -37,8 +37,6 @@ def add_spiegel2012(database: h5py._hl.files.File, input_path: str) -> None:
         None
     """
 
-    iso_tag = "spiegel2012"
-
     url = "https://www.astro.princeton.edu/~burrows/warmstart/spectra.tar.gz"
 
     input_file = url.rsplit("/", maxsplit=1)[-1]
@@ -70,98 +68,124 @@ def add_spiegel2012(database: h5py._hl.files.File, input_path: str) -> None:
     extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
-    print("\nAdding isochrones: Spiegel & Burrows (2012)...", end="", flush=True)
-
     # hy1s = hybrid clouds, solar abundances
     # hy3s = hybrid clouds, 3x solar abundances
     # cf1s = cloud-free, solar abundances
     # cf3s = cloud-free, 3x solar abundances
 
-    data_files = data_folder.glob("spectra/spec_hy1s_*.txt")
+    model_type = ["hy1s", "hy3s", "cf1s", "cf3s"]
 
-    mass_list = []
-    age_list = []
-    s_init_list = []
-    log_lum_list = []
+    labels = [
+        "hybrid [M/H] = +0.0",
+        "hybrid [M/H] = +0.5",
+        "cloud-free [M/H] = +0.0",
+        "cloud-free [M/H] = +0.5",
+    ]
 
-    for file_item in data_files:
-        # The first number indicates the mass (in units of
-        # Jupiter's) and the second indicates the age (in Myr).
-        #
-        # Each file contains the following rows:
-        #
-        #     Row #: Value
-        #
-        # 1: column 1: Age (Myr); columns 2-601: wavelength
-        # (in microns, in range 0.8-15.0)
-        #
-        # 2-end: column 1: initial entropy;
-        # columns 2-601 Fnu (in mJy for a source at 10 pc)
+    iso_tags = [
+        "spiegel2012-hybrid+0.0",
+        "spiegel2012-hybrid+0.5",
+        "spiegel2012-cloudfree+0.0",
+        "spiegel2012-cloudfree+0.5",
+    ]
 
-        file_split = file_item.name.split("_")
+    for model_idx, model_item in enumerate(model_type):
+        print(
+            f"\nAdding isochrones: Spiegel & Burrows (2012) {labels[model_idx]}...",
+            end="",
+            flush=True,
+        )
 
-        mass = float(file_split[3])  # (Mjup)
-        age = float(file_split[5][:-4])  # (Myr)
+        data_files = data_folder.glob(f"spectra/spec_{model_item}_*.txt")
 
-        data = np.loadtxt(file_item)
-        # age = data[0, 0]  # (Myr)
-        wavel = data[0, 1:]  # (um)
+        mass_list = []
+        age_list = []
+        s_init_list = []
+        log_lum_list = []
 
-        # (um) -> (m)
-        wavel *= 1e-6
+        for file_item in data_files:
+            # The first number indicates the mass (in units of
+            # Jupiter's) and the second indicates the age (in Myr).
+            #
+            # Each file contains the following rows:
+            #
+            #     Row #: Value
+            #
+            # 1: column 1: Age (Myr); columns 2-601: wavelength
+            # (in microns, in range 0.8-15.0)
+            #
+            # 2-end: column 1: initial entropy;
+            # columns 2-601 Fnu (in mJy for a source at 10 pc)
 
-        # Distance (pc)
-        distance = 10.0 * constants.PARSEC
+            file_split = file_item.name.split("_")
 
-        # Remove the first line with the age and wavelengths
-        data = data[1:,]
+            mass = float(file_split[3])  # (Mjup)
+            age = float(file_split[5][:-4])  # (Myr)
 
-        for i in range(data.shape[0]):
-            # Initial entropy (k_B/baryon)
-            s_init = data[i, 0]
+            data = np.loadtxt(file_item)
+            # age = data[0, 0]  # (Myr)
+            wavel = data[0, 1:]  # (um)
 
-            # Flux density at 10 pc (mJy)
-            flux_nu = data[i, 1:]
+            # (um) -> (m)
+            wavel *= 1e-6
 
-            # (mJy) -> (W m-2 Hz-1)
-            flux_nu *= 1e-3 * 1e-26
+            # Distance (pc)
+            distance = 10.0 * constants.PARSEC
 
-            # (W m-2 Hz-1) -> (W m-2 m-1)
-            flux_lambda = flux_nu * constants.LIGHT / wavel**2
+            # Remove the first line with the age and wavelengths
+            data = data[1:,]
 
-            # Integrated flux (W m-2)
-            flux_bol = np.trapezoid(flux_lambda, wavel)
+            for i in range(data.shape[0]):
+                # Initial entropy (k_B/baryon)
+                s_init = data[i, 0]
 
-            # Luminosity: L = 4π d^2 f_bol
-            lum_bol = 4.0 * np.pi * distance**2 * flux_bol
-            log_lum = np.log10(lum_bol / constants.L_SUN)
+                # Flux density at 10 pc (mJy)
+                flux_nu = data[i, 1:]
 
-            mass_list.append(mass)
-            age_list.append(age)
-            s_init_list.append(s_init)
-            log_lum_list.append(log_lum)
+                # (mJy) -> (W m-2 Hz-1)
+                flux_nu *= 1e-3 * 1e-26
 
-    model_param = ["age", "mass", "s_init"]
+                # (W m-2 Hz-1) -> (W m-2 m-1)
+                flux_lambda = flux_nu * constants.LIGHT / wavel**2
 
-    dgroup = database.create_group(f"isochrones/{iso_tag}")
+                # Integrated flux (W m-2)
+                flux_bol = np.trapezoid(flux_lambda, wavel)
 
-    dgroup.attrs["model"] = iso_tag
-    dgroup.attrs["regular_grid"] = False
-    dgroup.attrs["n_param"] = len(model_param)
+                # Luminosity: L = 4π d^2 f_bol
+                lum_bol = 4.0 * np.pi * distance**2 * flux_bol
+                log_lum = np.log10(lum_bol / constants.L_SUN)
 
-    for i, item in enumerate(model_param):
-        dgroup.attrs[f"parameter{i}"] = item
+                mass_list.append(mass)
+                age_list.append(age)
+                s_init_list.append(s_init)
+                log_lum_list.append(log_lum)
 
-    database.create_dataset(f"isochrones/{iso_tag}/mass", data=mass_list)  # (Mjup)
+        model_param = ["age", "mass", "s_init"]
 
-    database.create_dataset(f"isochrones/{iso_tag}/age", data=age_list)  # (Myr)
+        dgroup = database.create_group(f"isochrones/{iso_tags[model_idx]}")
 
-    database.create_dataset(
-        f"isochrones/{iso_tag}/log_lum", data=log_lum_list
-    )  # log(L/Lsun)
+        dgroup.attrs["model"] = iso_tags[model_idx]
+        dgroup.attrs["regular_grid"] = False
+        dgroup.attrs["n_param"] = len(model_param)
 
-    database.create_dataset(
-        f"isochrones/{iso_tag}/s_init", data=s_init_list
-    )  # (k_b/baryon)
+        for i, item in enumerate(model_param):
+            dgroup.attrs[f"parameter{i}"] = item
 
-    print(" [DONE]")
+        database.create_dataset(
+            f"isochrones/{iso_tags[model_idx]}/mass", data=mass_list
+        )  # (Mjup)
+
+        database.create_dataset(
+            f"isochrones/{iso_tags[model_idx]}/age", data=age_list
+        )  # (Myr)
+
+        database.create_dataset(
+            f"isochrones/{iso_tags[model_idx]}/log_lum", data=log_lum_list
+        )  # log(L/Lsun)
+
+        database.create_dataset(
+            f"isochrones/{iso_tags[model_idx]}/s_init", data=s_init_list
+        )  # (k_b/baryon)
+
+        print(" [DONE]")
+        print(f"Database tag: {iso_tags[model_idx]}")
