@@ -68,10 +68,10 @@ species.data.isochrone\_data.iso\_manual module
    :undoc-members:
    :show-inheritance:
 
-species.data.isochrone\_data.iso\_marleau module
-------------------------------------------------
+species.data.isochrone\_data.iso\_marleau2014 module
+----------------------------------------------------
 
-.. automodule:: species.data.isochrone_data.iso_marleau
+.. automodule:: species.data.isochrone_data.iso_marleau2014
    :members:
    :undoc-members:
    :show-inheritance:
@@ -112,6 +112,14 @@ species.data.isochrone\_data.iso\_sonora\_diamondback module
 ------------------------------------------------------------
 
 .. automodule:: species.data.isochrone_data.iso_sonora_diamondback
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.data.isochrone\_data.iso\_spiegel2012 module
+----------------------------------------------------
+
+.. automodule:: species.data.isochrone_data.iso_spiegel2012
    :members:
    :undoc-members:
    :show-inheritance:

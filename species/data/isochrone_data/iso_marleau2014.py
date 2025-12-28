@@ -105,11 +105,12 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
     data_lbol = data_lbol[..., 1, 1, 0]
     data_radius = data_radius[..., 1, 1, 0]
 
-    model_param = ["age", "mass", "log_lum", "radius", "s_i"]
+    model_param = ["age", "mass", "s_init"]
 
     dgroup = database.create_group(f"isochrones/{iso_tag}")
 
     dgroup.attrs["model"] = iso_tag
+    dgroup.attrs["regular_grid"] = True
     dgroup.attrs["n_param"] = len(model_param)
 
     for i, item in enumerate(model_param):

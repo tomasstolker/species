@@ -286,14 +286,31 @@ class ReadIsochrone:
             # else:
             #     model_name = hdf5_file[f"isochrones/{self.tag}/age"].attrs["model"]
 
+            if "regular_grid" in hdf5_file[f"isochrones/{self.tag}"].attrs:
+                self.regular_grid = hdf5_file[f"isochrones/{self.tag}"].attrs[
+                    "regular_grid"
+                ]
+            else:
+                self.regular_grid = False
+
             iso_data["age"] = np.asarray(hdf5_file[f"isochrones/{self.tag}/age"])
             iso_data["mass"] = np.asarray(hdf5_file[f"isochrones/{self.tag}/mass"])
-            iso_data["teff"] = np.asarray(hdf5_file[f"isochrones/{self.tag}/teff"])
             iso_data["log_lum"] = np.asarray(
                 hdf5_file[f"isochrones/{self.tag}/log_lum"]
             )
-            iso_data["log_g"] = np.asarray(hdf5_file[f"isochrones/{self.tag}/log_g"])
-            iso_data["radius"] = np.asarray(hdf5_file[f"isochrones/{self.tag}/radius"])
+
+            if "teff" in hdf5_file[f"isochrones/{self.tag}"]:
+                iso_data["teff"] = np.asarray(hdf5_file[f"isochrones/{self.tag}/teff"])
+
+            if "log_g" in hdf5_file[f"isochrones/{self.tag}"]:
+                iso_data["log_g"] = np.asarray(
+                    hdf5_file[f"isochrones/{self.tag}/log_g"]
+                )
+
+            if "radius" in hdf5_file[f"isochrones/{self.tag}"]:
+                iso_data["radius"] = np.asarray(
+                    hdf5_file[f"isochrones/{self.tag}/radius"]
+                )
 
             if "s_init" in hdf5_file[f"isochrones/{self.tag}"]:
                 iso_data["s_init"] = np.asarray(
@@ -304,8 +321,6 @@ class ReadIsochrone:
                 iso_data["mag"] = np.asarray(
                     hdf5_file[f"isochrones/{self.tag}/magnitudes"]
                 )
-
-        self.regular_grid = iso_data["log_lum"].ndim > 1
 
         if self.create_regular_grid and not self.regular_grid:
             age_unique = np.unique(iso_data["age"])
@@ -506,9 +521,9 @@ class ReadIsochrone:
             "sonora-diamondback-hybrid-grav+0.0",
             "sonora-diamondback-hybrid-grav+0.5",
         ]:
+            # TODO For Teff < 1300 K there were no clouds included in
+            # the model so best to use Sonora Bobcat for the spectra?
             # See https://zenodo.org/records/12735103
-            # For Teff < 1300 K there were no clouds included in the
-            # model so best to use Sonora Bobcat for the spectra?
             if model_param["teff"] > 1300.0:
                 extra_param["fsed"] = 2.0
 
@@ -658,7 +673,12 @@ class ReadIsochrone:
                 grid_points.append(iso_data["s_init"])
 
         else:
-            grid_points = np.column_stack([iso_data["age"], iso_data["mass"]])
+            if "s_init" in iso_data:
+                grid_points = np.column_stack(
+                    [iso_data["age"], iso_data["mass"], iso_data["s_init"]]
+                )
+            else:
+                grid_points = np.column_stack([iso_data["age"], iso_data["mass"]])
 
         # Parameter values to interpolate the evolutionary tracks
 
@@ -775,8 +795,10 @@ class ReadIsochrone:
 
         # Interpolation of Teff
 
-        if self.teff_interp is None and (
-            param_interp is None or "teff" in param_interp
+        if (
+            "teff" in iso_data
+            and self.teff_interp is None
+            and (param_interp is None or "teff" in param_interp)
         ):
             if self.regular_grid:
                 self.teff_interp = RegularGridInterpolator(
@@ -829,8 +851,10 @@ class ReadIsochrone:
 
         # Interpolation of log(g)
 
-        if self.logg_interp is None and (
-            param_interp is None or "logg" in param_interp
+        if (
+            "log_g" in iso_data
+            and self.logg_interp is None
+            and (param_interp is None or "logg" in param_interp)
         ):
             if self.regular_grid:
                 self.logg_interp = RegularGridInterpolator(
@@ -856,8 +880,10 @@ class ReadIsochrone:
 
         # Interpolation of radius
 
-        if self.radius_interp is None and (
-            param_interp is None or "radius" in param_interp
+        if (
+            "radius" in iso_data
+            and self.radius_interp is None
+            and (param_interp is None or "radius" in param_interp)
         ):
             if self.regular_grid:
                 self.radius_interp = RegularGridInterpolator(
@@ -985,7 +1011,7 @@ class ReadIsochrone:
                     # This can happen if the age sampling in the
                     # isochrone grid was different for each mass,
                     # for example baraffe+2015
-                    ages = np.unique(iso_data["mass"])  # (Mjup)
+                    ages = np.unique(iso_data["age"])  # (Mjup)
 
         # Check if initial entropy is provided
 
@@ -1007,7 +1033,12 @@ class ReadIsochrone:
                 grid_points.append(iso_data["s_init"])
 
         else:
-            grid_points = np.column_stack([iso_data["age"], iso_data["mass"]])
+            if "s_init" in iso_data:
+                grid_points = np.column_stack(
+                    [iso_data["age"], iso_data["mass"], iso_data["s_init"]]
+                )
+            else:
+                grid_points = np.column_stack([iso_data["age"], iso_data["mass"]])
 
         # Parameter values to interpolate the evolutionary tracks
 
@@ -1091,7 +1122,7 @@ class ReadIsochrone:
                         rescale=False,
                     )
 
-        if self.teff_interp is None:
+        if "teff" in iso_data and self.teff_interp is None:
             if self.regular_grid:
                 self.teff_interp = RegularGridInterpolator(
                     grid_points,
@@ -1109,7 +1140,10 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        teff = self.teff_interp(interp_values)
+        if self.teff_interp is not None:
+            teff = self.teff_interp(interp_values)
+        else:
+            teff = None
 
         if self.loglum_interp is None:
             if self.regular_grid:
@@ -1131,7 +1165,7 @@ class ReadIsochrone:
 
         log_lum = self.loglum_interp(interp_values)
 
-        if self.logg_interp is None:
+        if "log_g" in iso_data and self.logg_interp is None:
             if self.regular_grid:
                 self.logg_interp = RegularGridInterpolator(
                     grid_points,
@@ -1149,9 +1183,12 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        logg = self.logg_interp(interp_values)
+        if self.logg_interp is not None:
+            logg = self.logg_interp(interp_values)
+        else:
+            logg = None
 
-        if self.radius_interp is None:
+        if "radius" in iso_data and self.radius_interp is None:
             if self.regular_grid:
                 self.radius_interp = RegularGridInterpolator(
                     grid_points,
@@ -1169,7 +1206,10 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        radius = self.radius_interp(interp_values)
+        if self.radius_interp is not None:
+            radius = self.radius_interp(interp_values)
+        else:
+            radius = None
 
         if mag_abs is None and filter_mag is not None:
             warnings.warn(
@@ -1608,8 +1648,7 @@ class ReadIsochrone:
             # log_lum is not part of the regular grid points
 
             raise NotImplementedError(
-                "The 'get_mass()' method does not "
-                f"support the '{self.tag}' model."
+                f"The 'get_mass()' method does not support the '{self.tag}' model."
             )
 
         # Create array with grid points
@@ -1675,8 +1714,7 @@ class ReadIsochrone:
             # log_lum is not part of the regular grid points
 
             raise NotImplementedError(
-                "The 'get_radius()' method does not "
-                f"support the '{self.tag}' model."
+                f"The 'get_radius()' method does not support the '{self.tag}' model."
             )
 
         # Create array with grid points

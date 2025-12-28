@@ -61,7 +61,7 @@ def plot_posterior(
 ) -> mpl.figure.Figure:
     """
     Function to plot the posterior distribution of the
-    model parameters. For model grids, dashed lines show
+    model parameters. For model grids, colored ticks show
     the grid points, which can be used to check the width
     of the posterior distributions relative to the spacing
     between the grid points.
@@ -1075,7 +1075,7 @@ def plot_posterior(
                             ymin=ax_ymin,
                             ymax=ax_ymin + 0.08 * y_span,
                             colors="cadetblue",
-                            linestyles='solid',
+                            linestyles="solid",
                             linewidth=0.8,
                             zorder=1,
                         )
@@ -1085,7 +1085,7 @@ def plot_posterior(
                             ymin=ax_ymax - 0.08 * y_span,
                             ymax=ax_ymax,
                             colors="cadetblue",
-                            linestyles='solid',
+                            linestyles="solid",
                             linewidth=0.8,
                             zorder=1,
                         )
@@ -1099,7 +1099,7 @@ def plot_posterior(
                             xmin=ax_xmin,
                             xmax=ax_xmin + 0.08 * x_span,
                             colors="cadetblue",
-                            linestyles='solid',
+                            linestyles="solid",
                             linewidth=0.8,
                             zorder=1,
                         )
@@ -1109,7 +1109,7 @@ def plot_posterior(
                             xmin=ax_xmax - 0.08 * x_span,
                             xmax=ax_xmax,
                             colors="cadetblue",
-                            linestyles='solid',
+                            linestyles="solid",
                             linewidth=0.8,
                             zorder=1,
                         )

@@ -3,7 +3,7 @@ Module with a function for adding the Linder et al. (2019)
 evolutionary tracks to the database.
 """
 
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, SSLError
 from pathlib import Path
 
 import h5py
@@ -104,7 +104,7 @@ def add_linder2019(database: h5py._hl.files.File, input_path: str) -> None:
                 progressbar=True,
             )
 
-        except HTTPError:
+        except (HTTPError, SSLError):
             url = (
                 "https://home.strw.leidenuniv.nl/~stolker/species/J_A+A_623_A85.tar.gz"
             )

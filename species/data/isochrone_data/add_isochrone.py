@@ -21,6 +21,7 @@ from species.data.isochrone_data.iso_parsec import add_parsec
 from species.data.isochrone_data.iso_saumon2008 import add_saumon2008
 from species.data.isochrone_data.iso_sonora_bobcat import add_sonora_bobcat
 from species.data.isochrone_data.iso_sonora_diamondback import add_sonora_diamondback
+from species.data.isochrone_data.iso_spiegel2012 import add_spiegel2012
 
 
 @typechecked
@@ -44,9 +45,10 @@ def add_isochrone_grid(
         Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
         'baraffe2015', 'bt-settl', 'linder2019', 'marleau2014',
         'nextgen', 'parsec', 'saumon2008', 'sonora-bobcat',
-        'sonora-diamondback'). Isochrones will be automatically
-        downloaded. Alternatively, the ``filename`` parameter
-        can be used in combination with ``tag``.
+        'sonora-diamondback', 'spiegel2012'). Isochrones will
+        be automatically downloaded. Alternatively, the
+        ``filename`` parameter can be used in combination
+        with ``tag``.
     filename : str, None
         Filename with the isochrone data. The argument of
         ``model`` will be ignored by setting the argument
@@ -104,6 +106,9 @@ def add_isochrone_grid(
 
     elif model_name == "sonora-diamondback":
         add_sonora_diamondback(hdf5_file, data_folder)
+
+    elif model_name == "spiegel2012":
+        add_spiegel2012(hdf5_file, data_folder)
 
     else:
         add_manual(hdf5_file, tag, filename, model_name=tag)

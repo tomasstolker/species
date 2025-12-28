@@ -569,9 +569,10 @@ class Database:
             Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
             'baraffe2015', 'bt-settl', linder2019', 'marleau2014',
             'nextgen', 'parsec', 'saumon2008', 'sonora-bobcat',
-            'sonora-diamondback'). Isochrones will be automatically
-            downloaded. Alternatively, the ``filename`` parameter
-            can be used in combination with ``tag``.
+            'sonora-diamondback', 'spiegel2012'). Isochrones will
+            be automatically downloaded. Alternatively, the
+            ``filename`` parameter can be used in combination
+            with ``tag``.
         filename : str, None
             Filename with the isochrone data. The argument of
             ``model`` will be ignored by setting the argument
@@ -615,6 +616,7 @@ class Database:
             "saumon2008",
             "sonora-bobcat",
             "sonora-diamondback",
+            "spiegel2012",
         ]
 
         if filename is None and model not in avail_models:
@@ -709,6 +711,10 @@ class Database:
                 for iso_item in iso_tags:
                     if f"isochrones/sonora-diamondback-{iso_item}" in hdf5_file:
                         del hdf5_file[f"isochrones/sonora-diamondback-{iso_item}"]
+
+            elif model == "spiegel2012":
+                if "isochrones/spiegel2012" in hdf5_file:
+                    del hdf5_file["isochrones/spiegel2012"]
 
             else:
                 if f"isochrones/{tag}" in hdf5_file:

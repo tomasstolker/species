@@ -258,6 +258,12 @@ def plot_cooling(
                 elif cooling_param == "logg":
                     cool_tracks[planet_idx].append([cool_box.age, cool_box.logg])
 
+                if cool_tracks[planet_idx][-1][1] is None:
+                    raise ValueError(
+                        f"The selected parameter, '{cooling_param}', "
+                        f"is not part of the '{model_name}' "
+                        "evolutionary model grid.")
+
                 ax[planet_idx].plot(
                     cool_tracks[planet_idx][-1][0],
                     cool_tracks[planet_idx][-1][1],

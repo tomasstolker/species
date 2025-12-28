@@ -307,11 +307,11 @@ class FitEvolution:
             self.bounds = {}
             for key, value in self.read_iso.get_points().items():
                 if key == "age":
-                    self.bounds[key] = (value[0], value[-1])
+                    self.bounds[key] = (np.amin(value), np.amax(value))
 
                 elif key in ["mass", "s_init"]:
                     for i in range(self.n_planets):
-                        self.bounds[f"{key}_{i}"] = (value[0], value[-1])
+                        self.bounds[f"{key}_{i}"] = (np.amin(value), np.amax(value))
 
         # Check if parameters are fixed
 
@@ -777,23 +777,14 @@ class FitEvolution:
                     param_interp=["log_lum", "teff", "logg", "radius"],
                 )
 
-                radius[sample_idx, planet_idx] = iso_box.radius[0]
-                log_g[sample_idx, planet_idx] = iso_box.logg[0]
-                t_eff[sample_idx, planet_idx] = iso_box.teff[0]
+                if iso_box.radius is not None:
+                    radius[sample_idx, planet_idx] = iso_box.radius[0]
 
-                # if iso_box.s_init is None:
+                if iso_box.logg is not None:
+                    log_g[sample_idx, planet_idx] = iso_box.logg[0]
 
-                # l_bol = 10.0 ** iso_box.log_lum[0] * constants.L_SUN
-
-                # t_eff[sample_idx, planet_idx] = (
-                #     l_bol
-                #     / (
-                #         4.0
-                #         * np.pi
-                #         * (radius[sample_idx, planet_idx] * constants.R_JUP) ** 2
-                #         * constants.SIGMA_SB
-                #     )
-                # ) ** 0.25
+                if iso_box.teff is not None:
+                    t_eff[sample_idx, planet_idx] = iso_box.teff[0]
 
         for planet_idx in range(self.n_planets):
             self.model_par.append(f"teff_{planet_idx}")
