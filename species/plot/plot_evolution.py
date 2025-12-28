@@ -104,11 +104,16 @@ def plot_cooling(
 
     samples = samples_box.samples
     attr = samples_box.attributes
+    n_param = attr["n_param"]
     n_planets = attr["n_planets"]
     model_name = attr["model_name"]
     log_lum = attr["log_lum"]
     age_prior = attr["age_prior"]
     radius_prior = attr["radius_prior"]
+
+    param_indices = {}
+    for i in range(n_param):
+        param_indices[samples_box.attributes[f"parameter{i}"]] = i
 
     if np.isnan(age_prior[0]):
         param_idx = samples_box.parameters.index("age")
@@ -230,9 +235,16 @@ def plot_cooling(
 
         for sample_idx in ran_indices:
             for planet_idx in range(n_planets):
-                mass = samples[sample_idx, 1 + planet_idx]
+                mass = samples[sample_idx, param_indices[f"mass_{planet_idx}"]]
 
-                cool_box = read_iso.get_cooling_track(mass=mass, ages=None)
+                if f"s_init_{planet_idx}" in param_indices:
+                    s_init = samples[sample_idx, param_indices[f"s_init_{planet_idx}"]]
+                else:
+                    s_init = None
+
+                cool_box = read_iso.get_cooling_track(
+                    mass=mass, ages=None, s_init=s_init
+                )
 
                 if cooling_param in ["luminosity", "log_lum"]:
                     cool_tracks[planet_idx].append([cool_box.age, cool_box.log_lum])
@@ -392,11 +404,16 @@ def plot_isochrones(
 
     samples = samples_box.samples
     attr = samples_box.attributes
+    n_param = samples_box.attributes["n_param"]
     n_planets = attr["n_planets"]
     model_name = attr["model_name"]
     log_lum = attr["log_lum"]
     age_prior = attr["age_prior"]
     mass_prior = attr["mass_prior"]
+
+    param_indices = {}
+    for i in range(n_param):
+        param_indices[samples_box.attributes[f"parameter{i}"]] = i
 
     if np.isnan(age_prior[0]):
         param_idx = samples_box.parameters.index("age")
@@ -492,10 +509,15 @@ def plot_isochrones(
 
     for sample_idx in ran_indices:
         for planet_idx in range(n_planets):
-            age = samples[sample_idx, 0]
+            age = samples[sample_idx, param_indices["age"]]
+
+            if f"s_init_{planet_idx}" in param_indices:
+                s_init = samples[sample_idx, param_indices[f"s_init_{planet_idx}"]]
+            else:
+                s_init = None
 
             iso_box = read_iso.get_isochrone(
-                age=age, masses=None, param_interp=["log_lum"]
+                age=age, masses=None, s_init=s_init, param_interp=["log_lum"]
             )
 
             isochrones[planet_idx].append([iso_box.mass, iso_box.log_lum])

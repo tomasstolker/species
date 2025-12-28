@@ -471,17 +471,17 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     #     index = param.index("mass_2")
     #     param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
 
-    if "entropy" in param:
-        index = param.index("entropy")
+    if "s_init" in param:
+        index = param.index("s_init")
         param[index] = r"$S_\mathrm{i}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
 
-    if "entropy_1" in param:
-        index = param.index("entropy_1")
-        param[index] = r"$S_\mathrm{i,b}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
-
-    if "entropy_2" in param:
-        index = param.index("entropy_2")
-        param[index] = r"$S_\mathrm{i,c}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+    # if "s_init_1" in param:
+    #     index = param.index("s_init_1")
+    #     param[index] = r"$S_\mathrm{i,b}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+    #
+    # if "s_init_2" in param:
+    #     index = param.index("s_init_2")
+    #     param[index] = r"$S_\mathrm{i,c}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
 
     if "dfrac_1" in param:
         index = param.index("dfrac_1")
@@ -510,6 +510,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     if "mcore_2" in param:
         index = param.index("mcore_2")
         param[index] = r"$M_\mathrm{core,c}$ ($M_\mathrm{E}$)"
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"s_init_{i}" in param:
+            index = param.index(f"s_i_{i}")
+            param[index] = (
+                rf"$S_\mathrm{{i,{item}}}$ ($k_\mathrm{{B}}/\mathrm{{baryon}}$)"
+            )
 
     for i, item in enumerate(ascii_lowercase[1:]):
         if f"teff_evol_{i}" in param:

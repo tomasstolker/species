@@ -15,9 +15,11 @@ import pooch
 from astropy.io import fits
 from typeguard import typechecked
 
+from species.core import constants
+
 
 @typechecked
-def add_marleau(database: h5py._hl.files.File, input_path: str) -> None:
+def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the `Marleau & Cumming (2014)
     <https://ui.adsabs.harvard.edu/abs/2014MNRAS.437.1378M>`_
@@ -36,29 +38,7 @@ def add_marleau(database: h5py._hl.files.File, input_path: str) -> None:
         None
     """
 
-    # M      age     S_0             L          S(t)            R        Teff
-    # (M_J)  (Gyr)   (k_B/baryon)    (L_sol)    (k_B/baryon)    (R_J)    (K)
-    # mass, age, _, luminosity, _, radius, teff = np.loadtxt(file_name, unpack=True)
-    #
-    # age *= 1e3  # (Myr)
-    # luminosity = np.log10(luminosity)
-    #
-    # mass_cgs = 1e3 * mass * constants.M_JUP  # (g)
-    # radius_cgs = 1e2 * radius * constants.R_JUP  # (cm)
-    #
-    # logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs**2)
-
-    # isochrones = np.vstack((age, mass, teff, luminosity, logg))
-    # isochrones = np.transpose(isochrones)
-    #
-    # index_sort = np.argsort(isochrones[:, 0])
-    # isochrones = isochrones[index_sort, :]
-    #
-    # dset = database.create_dataset(f"isochrones/{tag}/evolution", data=isochrones)
-    #
-    # dset.attrs["model"] = "marleau"
-
-    iso_tag = "marleau"
+    iso_tag = "marleau2014"
 
     url = "https://home.strw.leidenuniv.nl/~stolker/species/evolution_luminosity.fits"
 
@@ -127,39 +107,50 @@ def add_marleau(database: h5py._hl.files.File, input_path: str) -> None:
 
     model_param = ["age", "mass", "log_lum", "radius", "s_i"]
 
-    age_list = []
-    mass_list = []
-    lbol_list = []
-    radius_list = []
-    s_i_list = []
-
-    for age_idx, age_item in enumerate(grid_points["age"]):
-        for mass_idx, mass_item in enumerate(grid_points["mass"]):
-            for s_i_idx, s_i_item in enumerate(grid_points["s_i"]):
-                age_list.append(age_item)
-                mass_list.append(mass_item)
-                lbol_list.append(data_lbol[age_idx, mass_idx, s_i_idx])
-                radius_list.append(data_lbol[age_idx, mass_idx, s_i_idx])
-                s_i_list.append(s_i_item)
-
     dgroup = database.create_group(f"isochrones/{iso_tag}")
+
     dgroup.attrs["model"] = iso_tag
     dgroup.attrs["n_param"] = len(model_param)
+
     for i, item in enumerate(model_param):
         dgroup.attrs[f"parameter{i}"] = item
 
-    # TODO dummy Teff and log(g)
-    teff_list = np.full(len(age_list), 10000.)
-    logg_list = np.full(len(age_list), 4.0)
+    data_teff = (
+        (10.0**data_lbol * constants.L_SUN)
+        / (4.0 * np.pi * (data_radius * constants.R_JUP) ** 2 * constants.SIGMA_SB)
+    ) ** (1.0 / 4.0)
 
-    database.create_dataset(f"isochrones/{iso_tag}/mass", data=mass_list)  # (Mjup)
-    database.create_dataset(f"isochrones/{iso_tag}/age", data=age_list)  # (Myr)
+    data_mass = np.array(grid_points["mass"])
+    data_mass = np.broadcast_to(data_mass[None, :, None], data_lbol.shape)
+
+    # 1e2 to convert from SI to cgs
+    data_logg = np.log10(
+        1e2
+        * constants.GRAVITY
+        * (data_mass * constants.M_JUP)
+        / (data_radius * constants.R_JUP) ** 2
+    )
+
     database.create_dataset(
-        f"isochrones/{iso_tag}/log_lum", data=lbol_list
+        f"isochrones/{iso_tag}/mass", data=grid_points["mass"]
+    )  # (Mjup)
+
+    database.create_dataset(
+        f"isochrones/{iso_tag}/age", data=grid_points["age"]
+    )  # (Myr)
+
+    database.create_dataset(
+        f"isochrones/{iso_tag}/log_lum", data=data_lbol
     )  # log(L/Lsun)
-    database.create_dataset(f"isochrones/{iso_tag}/radius", data=radius_list)  # (Rjup)
-    database.create_dataset(f"isochrones/{iso_tag}/s_init", data=s_i_list)  # (k_b/baryon)
-    database.create_dataset(f"isochrones/{iso_tag}/teff", data=teff_list)  # (K)
-    database.create_dataset(f"isochrones/{iso_tag}/log_g", data=logg_list)  # log(g)
+
+    database.create_dataset(f"isochrones/{iso_tag}/radius", data=data_radius)  # (Rjup)
+
+    database.create_dataset(
+        f"isochrones/{iso_tag}/s_init", data=grid_points["s_i"]
+    )  # (k_b/baryon)
+
+    database.create_dataset(f"isochrones/{iso_tag}/teff", data=data_teff)  # (K)
+
+    database.create_dataset(f"isochrones/{iso_tag}/log_g", data=data_logg)  # log(g)
 
     print(" [DONE]")

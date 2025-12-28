@@ -16,6 +16,7 @@ from matplotlib.ticker import ScalarFormatter
 from scipy.stats import norm
 
 from species.core import constants
+from species.read.read_isochrone import ReadIsochrone
 from species.read.read_model import ReadModel
 from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
@@ -55,12 +56,15 @@ def plot_posterior(
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
     show_priors: bool = False,
-    show_grid: bool = False,
+    show_grid: bool = True,
     kwargs_corner: Optional[dict] = None,
 ) -> mpl.figure.Figure:
     """
     Function to plot the posterior distribution of the
-    estimated model parameters.
+    model parameters. For model grids, dashed lines show
+    the grid points, which can be used to check the width
+    of the posterior distributions relative to the spacing
+    between the grid points.
 
     Parameters
     ----------
@@ -130,9 +134,9 @@ def plot_posterior(
         :class:`~species.fit.retrieval.AtmosphericRetrieval.setup_retrieval`.
     show_grid : bool
         Show with lines for the grid points of the atmospheric model
-        on the 1D and 2D marginalized posteriors (default: False).
+        on the 1D and 2D marginalized posteriors (default: True).
         This parameter has only an effect for results obtained with
-        :class:`~species.fit.fit_model.FitModel.
+        :class:`~species.fit.fit_model.FitModel`.
     kwargs_corner : dict, None
         Dictionary with keyword arguments that can be used to adjust the
         parameters of the `corner() function
@@ -151,7 +155,6 @@ def plot_posterior(
 
     box = species_db.get_samples(tag)
     samples = box.samples
-    box.open_box()
 
     print_section("Plot posterior distributions")
 
@@ -171,6 +174,9 @@ def plot_posterior(
 
     if "sampler" in box.attributes:
         print((f"Sampler: {box.attributes['sampler']}"))
+
+    print(f"\nShow priors: {show_priors}")
+    print(f"Show grid: {show_grid}")
 
     # Create empty dictionary if needed
 
@@ -1037,43 +1043,76 @@ def plot_posterior(
                     ax.get_xaxis().set_label_coords(0.5, -0.26)
                     ax.get_yaxis().set_label_coords(-0.27, 0.5)
 
-    if (
-        show_grid
-        and box.attributes["model_type"] == "atmosphere"
-        and box.attributes["model_name"] != "petitradtrans"
-    ):
-        read_model = ReadModel(box.attributes["model_name"])
-        grid_points = read_model.get_points()
+    if show_grid:
+        if (
+            box.attributes["model_type"] == "atmosphere"
+            and box.attributes["model_name"] != "petitradtrans"
+        ):
+            read_model = ReadModel(box.attributes["model_name"])
+            grid_points = read_model.get_points()
 
-        for i in range(ndim):
-            for j in range(ndim):
-                ax = axes[i, j]
+        elif (
+            box.attributes["model_type"] == "evolution"
+            and box.attributes["regular_grid"] == True
+        ):
+            read_model = ReadIsochrone(box.attributes["model_name"])
+            grid_points = read_model.get_points()
 
-                if (i == j or i > j) and box_param[j] in grid_points:
-                    ax_ymin, ax_ymax = ax.get_ylim()
+        else:
+            grid_points = None
 
-                    ax.vlines(
-                        grid_points[box_param[j]],
-                        ymin=ax_ymin,
-                        ymax=ax_ymax,
-                        colors="cadetblue",
-                        linestyles=(0, (5, 10)),
-                        linewidth=0.8,
-                        zorder=1,
-                    )
+        if grid_points is not None:
+            for i in range(ndim):
+                for j in range(ndim):
+                    ax = axes[i, j]
 
-                elif i > j and box_param[i] in grid_points:
-                    ax_xmin, ax_xmax = ax.get_xlim()
+                    if (i == j or i > j) and box_param[j] in grid_points:
+                        ax_ymin, ax_ymax = ax.get_ylim()
+                        y_span = ax_ymax - ax_ymin
 
-                    ax.hlines(
-                        grid_points[box_param[i]],
-                        xmin=ax_xmin,
-                        xmax=ax_xmax,
-                        colors="cadetblue",
-                        linestyles=(0, (5, 10)),
-                        linewidth=0.8,
-                        zorder=1,
-                    )
+                        ax.vlines(
+                            grid_points[box_param[j]],
+                            ymin=ax_ymin,
+                            ymax=ax_ymin + 0.08 * y_span,
+                            colors="cadetblue",
+                            linestyles='solid',
+                            linewidth=0.8,
+                            zorder=1,
+                        )
+
+                        ax.vlines(
+                            grid_points[box_param[j]],
+                            ymin=ax_ymax - 0.08 * y_span,
+                            ymax=ax_ymax,
+                            colors="cadetblue",
+                            linestyles='solid',
+                            linewidth=0.8,
+                            zorder=1,
+                        )
+
+                    elif i > j and box_param[i] in grid_points:
+                        ax_xmin, ax_xmax = ax.get_xlim()
+                        x_span = ax_xmax - ax_xmin
+
+                        ax.hlines(
+                            grid_points[box_param[i]],
+                            xmin=ax_xmin,
+                            xmax=ax_xmin + 0.08 * x_span,
+                            colors="cadetblue",
+                            linestyles='solid',
+                            linewidth=0.8,
+                            zorder=1,
+                        )
+
+                        ax.hlines(
+                            grid_points[box_param[i]],
+                            xmin=ax_xmax - 0.08 * x_span,
+                            xmax=ax_xmax,
+                            colors="cadetblue",
+                            linestyles='solid',
+                            linewidth=0.8,
+                            zorder=1,
+                        )
 
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)

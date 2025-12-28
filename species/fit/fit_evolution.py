@@ -14,17 +14,6 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-try:
-    import pymultinest
-
-except:
-    warnings.warn(
-        "PyMultiNest could not be imported. "
-        "Perhaps because MultiNest was not built "
-        "and/or found at the LD_LIBRARY_PATH "
-        "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
-    )
-
 from scipy.stats import norm, truncnorm
 from tqdm.auto import tqdm
 from typeguard import typechecked
@@ -107,7 +96,7 @@ class FitEvolution:
             The boundaries that are used for the uniform or
             log-uniform priors. Fixing a parameter is possible by
             providing the same value as lower and upper boundary
-            of the parameter (e.g. ``bounds={'y_frac': (0.25, 0.25)``.
+            of the parameter (e.g. ``bounds={'mass_0': (5.0, 5.0)``.
         interp_method : str
             Interpolation method for the isochrone data. The argument
             should be either 'linear', for using a linear 2D
@@ -161,8 +150,8 @@ class FitEvolution:
         elif isinstance(self.radius_prior, tuple):
             self.radius_prior = [self.radius_prior]
 
-        if 'SPECIES_CONFIG' in os.environ:
-            config_file = os.environ['SPECIES_CONFIG']
+        if "SPECIES_CONFIG" in os.environ:
+            config_file = os.environ["SPECIES_CONFIG"]
         else:
             config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -194,13 +183,6 @@ class FitEvolution:
                 f"the database: {tag_list}"
             )
 
-        # Model parameters
-
-        self.model_par = ["age"]
-
-        for i in range(self.n_planets):
-            self.model_par.append(f"mass_{i}")
-
         # Read isochrone grid
 
         self.read_iso = ReadIsochrone(
@@ -210,26 +192,37 @@ class FitEvolution:
             interp_method=self.interp_method,
         )
 
+        # Model parameters
+
+        self.model_par = ["age"]
+
+        for i in range(self.n_planets):
+            self.model_par.append(f"mass_{i}")
+
+        if "s_init" in self.read_iso.get_points():
+            for i in range(self.n_planets):
+                self.model_par.append(f"s_init_{i}")
+
         # Check if the log_lum values are within the
         # available range of the evolutionary grid
 
-        _, _, _, _, grid_log_lum, _, _, _, _ = self.read_iso._read_data()
+        iso_data = self.read_iso.read_data()
 
         for planet_idx in range(self.n_planets):
-            if self.log_lum[planet_idx][0] < np.amin(grid_log_lum):
+            if self.log_lum[planet_idx][0] < np.amin(iso_data["log_lum"]):
                 warnings.warn(
                     f"The luminosity of the object with index {planet_idx}, "
                     f"log_lum={self.log_lum[planet_idx][0]}, is smaller than "
                     f"the minimum luminosity in the '{self.evolution_model}' "
-                    f"grid, log(L/Lsun)={np.amin(grid_log_lum)}."
+                    f"grid, log(L/Lsun)={np.amin(iso_data['log_lum']):.2f}."
                 )
 
-            if self.log_lum[planet_idx][0] > np.amax(grid_log_lum):
+            if self.log_lum[planet_idx][0] > np.amax(iso_data["log_lum"]):
                 warnings.warn(
                     f"The luminosity of the object with index {planet_idx}, "
                     f"log_lum={self.log_lum[planet_idx][0]}, is larger than "
                     f"the maximum luminosity in the '{self.evolution_model}' "
-                    f"grid, log(L/Lsun)={np.amax(grid_log_lum)}."
+                    f"grid, log(L/Lsun)={np.amax(iso_data['log_lum']):.2f}."
                 )
 
         # Prior boundaries
@@ -238,8 +231,8 @@ class FitEvolution:
             # Set manual prior boundaries
 
             bounds_grid = {}
-            for param_key, param_value in self.read_iso.grid_points().items():
-                if param_key in ["age", "mass"]:
+            for param_key, param_value in self.read_iso.get_points().items():
+                if param_key in ["age", "mass", "s_init"]:
                     bounds_grid[param_key] = (
                         np.amin(param_value),
                         np.amax(param_value),
@@ -312,11 +305,11 @@ class FitEvolution:
             # Set all prior boundaries to the grid boundaries
 
             self.bounds = {}
-            for key, value in self.read_iso.grid_points().items():
+            for key, value in self.read_iso.get_points().items():
                 if key == "age":
                     self.bounds[key] = (value[0], value[-1])
 
-                elif key == "mass":
+                elif key in ["mass", "s_init"]:
                     for i in range(self.n_planets):
                         self.bounds[f"{key}_{i}"] = (value[0], value[-1])
 
@@ -577,24 +570,27 @@ class FitEvolution:
             chi_square = 0.0
 
             for planet_idx in range(self.n_planets):
-                param_names = [
-                    "age",
-                    f"mass_{planet_idx}",
-                ]
+                # param_names = [
+                #     "age",
+                #     f"mass_{planet_idx}",
+                # ]
+
+                # if f"s_init_{planet_idx}" in self.model_par:
+                #     param_names.append(f"s_init_{planet_idx}")
+
+                # param_val = []
+                #
+                # for param_item in param_names:
+                #     if param_item in self.fix_param:
+                #         param_val.append(self.fix_param[param_item])
+                #
+                #     else:
+                #         param_val.append(params[cube_index[param_item]])
 
                 if "age" in self.fix_param:
                     age_param = self.fix_param["age"]
                 else:
                     age_param = params[cube_index["age"]]
-
-                param_val = []
-
-                for param_item in param_names:
-                    if param_item in self.fix_param:
-                        param_val.append(self.fix_param[param_item])
-
-                    else:
-                        param_val.append(params[cube_index[param_item]])
 
                 if f"inflate_lbol{planet_idx}" in self.bounds:
                     lbol_var = (
@@ -608,8 +604,14 @@ class FitEvolution:
                 if self.radius_prior[planet_idx] is not None:
                     param_interp.append("radius")
 
+                if f"s_init_{planet_idx}" in self.model_par:
+                    s_init = params[cube_index[f"s_init_{planet_idx}"]]
+                else:
+                    s_init = None
+
                 iso_box = self.read_iso.get_isochrone(
                     age=age_param,
+                    s_init=s_init,
                     masses=np.array([params[cube_index[f"mass_{planet_idx}"]]]),
                     filters_color=None,
                     filter_mag=None,
@@ -653,6 +655,8 @@ class FitEvolution:
                 log_like = -0.5 * chi_square
 
             return log_like
+
+        import pymultinest
 
         pymultinest.run(
             ln_like,
@@ -759,8 +763,14 @@ class FitEvolution:
                 age = samples[sample_idx, cube_index["age"]]
                 mass = samples[sample_idx, cube_index[f"mass_{planet_idx}"]]
 
+                if f"s_init_{planet_idx}" in cube_index:
+                    s_init = samples[sample_idx, cube_index[f"s_init_{planet_idx}"]]
+                else:
+                    s_init = None
+
                 iso_box = self.read_iso.get_isochrone(
                     age=age,
+                    s_init=s_init,
                     masses=np.array([mass]),
                     filters_color=None,
                     filter_mag=None,
@@ -770,6 +780,8 @@ class FitEvolution:
                 radius[sample_idx, planet_idx] = iso_box.radius[0]
                 log_g[sample_idx, planet_idx] = iso_box.logg[0]
                 t_eff[sample_idx, planet_idx] = iso_box.teff[0]
+
+                # if iso_box.s_init is None:
 
                 # l_bol = 10.0 ** iso_box.log_lum[0] * constants.L_SUN
 
@@ -910,6 +922,7 @@ class FitEvolution:
             "age_prior": self.age_prior,
             "mass_prior": self.mass_prior,
             "radius_prior": self.radius_prior,
+            "regular_grid": self.read_iso.regular_grid,
         }
 
         # Get the MPI rank of the process

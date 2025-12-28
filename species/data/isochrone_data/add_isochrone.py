@@ -15,7 +15,7 @@ from species.data.isochrone_data.iso_btsettl import add_btsettl
 from species.data.isochrone_data.iso_chabrier2023 import add_chabrier2023
 from species.data.isochrone_data.iso_linder2019 import add_linder2019
 from species.data.isochrone_data.iso_manual import add_manual
-from species.data.isochrone_data.iso_marleau import add_marleau
+from species.data.isochrone_data.iso_marleau2014 import add_marleau2014
 from species.data.isochrone_data.iso_nextgen import add_nextgen
 from species.data.isochrone_data.iso_parsec import add_parsec
 from species.data.isochrone_data.iso_saumon2008 import add_saumon2008
@@ -42,7 +42,7 @@ def add_isochrone_grid(
         Database.
     model_name : str, None
         Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
-        'baraffe2015', 'bt-settl', 'linder2019', 'marleau',
+        'baraffe2015', 'bt-settl', 'linder2019', 'marleau2014',
         'nextgen', 'parsec', 'saumon2008', 'sonora-bobcat',
         'sonora-diamondback'). Isochrones will be automatically
         downloaded. Alternatively, the ``filename`` parameter
@@ -87,8 +87,8 @@ def add_isochrone_grid(
     elif model_name == "linder2019":
         add_linder2019(hdf5_file, data_folder)
 
-    elif model_name == "marleau":
-        add_marleau(hdf5_file, data_folder)
+    elif model_name == "marleau2014":
+        add_marleau2014(hdf5_file, data_folder)
 
     elif model_name == "nextgen":
         add_nextgen(hdf5_file, data_folder)
