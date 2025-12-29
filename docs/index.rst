@@ -19,6 +19,7 @@ Documentation for *species*
    :hidden:
 
    overview
+   data
    configuration
    database
    tutorials

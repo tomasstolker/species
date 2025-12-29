@@ -74,7 +74,7 @@
     },
     "atmo-petrus2023-highres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
-        "name": "ATMO (Petrus et al. 2023)",
+        "name": "ATMO (Petrus et al. 2023; high-res)",
         "file size": "2.4 GB",
         "wavelength range": [0.2, 2.5],
         "lambda/d_lambda": 10000,
@@ -85,7 +85,7 @@
     },
     "blackbody": {
         "parameters": ["teff"],
-        "name": "blackbody",
+        "name": "Blackbody",
         "file size": "41 MB",
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 1000,
@@ -130,7 +130,7 @@
     },
     "bt-nextgen-highres": {
         "parameters": ["teff", "logg", "feh"],
-        "name": "BT-NextGen",
+        "name": "BT-NextGen (high-res)",
         "file size": "1.3 GB",
         "wavelength range": [0.1, 50],
         "lambda/d_lambda": 200000,
@@ -139,7 +139,7 @@
     },
     "bt-nextgen-optical": {
         "parameters": ["teff", "logg", "feh"],
-        "name": "BT-NextGen",
+        "name": "BT-NextGen (optical)",
         "file size": "7.2 GB",
         "wavelength range": [0.1, 1.0],
         "lambda/d_lambda": 500000,
@@ -148,7 +148,7 @@
     },
     "bt-nextgen-subsolar": {
         "parameters": ["teff", "logg", "feh"],
-        "name": "BT-NextGen subsolar",
+        "name": "BT-NextGen (subsolar)",
         "file size": "564 MB",
         "wavelength range": [0.1, 50],
         "lambda/d_lambda": 2000,
@@ -187,7 +187,7 @@
     },
     "exo-rem-lowres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
-        "name": "Exo-REM",
+        "name": "Exo-REM (low-res)",
         "file size": "493 MB",
         "wavelength range": [0.34, 250.0],
         "lambda/d_lambda": 500,
@@ -198,7 +198,7 @@
     },
     "exo-rem-nocloud": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
-        "name": "Exo-REM",
+        "name": "Exo-REM (cloud-free)",
         "file size": "356 MB",
         "wavelength range": [0.34, 250.0],
         "lambda/d_lambda": 500,
@@ -209,7 +209,7 @@
     },
     "exo-rem-highres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
-        "name": "Exo-REM",
+        "name": "Exo-REM (high-res)",
         "file size": "14 GB",
         "wavelength range": [0.7, 250.0],
         "lambda/d_lambda": 20000,
@@ -220,7 +220,7 @@
     },
     "exo-rem-highres-isotopes": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_co_iso"],
-        "name": "Exo-REM",
+        "name": "Exo-REM (CO isotopologues)",
         "file size": "6.2G GB",
         "wavelength range": [0.7, 250.0],
         "lambda/d_lambda": 20000,
@@ -308,7 +308,7 @@
     },
     "morley2012": {
         "parameters": ["teff", "logg", "fsed"],
-        "name": "Morley et al. (2012)",
+        "name": "Morley T/Y dwarfs",
         "file size": "62 MB",
         "wavelength range": [0.6, 30],
         "lambda/d_lambda": 6000,
@@ -403,6 +403,8 @@
         "wavelength range": [0.4, 50],
         "lambda/d_lambda": 6000,
         "teff range": [500, 2400],
+        "reference": "Saumon & Marley (2008)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S",
         "checksum": "874acbda7dcdb4a732d7c2605b8bf4381af331292c7d2c08f6380e874936654a"
     },
     "saumon2008-cloudy": {
@@ -412,6 +414,8 @@
         "wavelength range": [0.4, 50],
         "lambda/d_lambda": 6000,
         "teff range": [500, 2400],
+        "reference": "Saumon & Marley (2008)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S",
         "checksum": "e2d33de5e5658e11f43e1b68eaf25a411e0e2ac584b0f9989526d66b3c399754"
     },
     "sonora-cholla": {
@@ -495,7 +499,7 @@
     },
     "sonora-diamondback-highres": {
         "parameters": ["teff", "logg", "feh", "fsed"],
-        "name": "Sonora Diamondback",
+        "name": "Sonora Diamondback (high-res)",
         "file size": "2 GB",
         "wavelength range": [0.3, 250],
         "lambda/d_lambda": 30000,
