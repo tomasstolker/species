@@ -8,9 +8,9 @@ from docutils import nodes
 from docutils.parsers.rst import Directive
 
 
-class JsonModelListDirective(Directive):
+class JsonModelTableDirective(Directive):
     """
-    Render a compact one-line-per-model list from a JSON file.
+    Render a table of models from a JSON file.
 
     Usage::
 
@@ -21,53 +21,99 @@ class JsonModelListDirective(Directive):
     has_content = False
 
     def run(self):
-        """
-        Read the JSON file and generate a compact bullet list of models.
-        """
-
         json_path = self.arguments[0]
 
         with open(json_path, encoding="utf-8") as f:
             data = json.load(f)
 
-        bullet_list = nodes.bullet_list()
+        # --- Create table structure
+        table = nodes.table()
+        table["classes"].append("json-model-table")
 
+        tgroup = nodes.tgroup(cols=4)
+        table += tgroup
+
+        for _ in range(4):
+            tgroup += nodes.colspec(colwidth=1)
+
+        thead = nodes.thead()
+        tbody = nodes.tbody()
+        tgroup += thead
+        tgroup += tbody
+
+        # --- Header row
+        header_row = nodes.row()
+        for title in [
+            "Model",
+            r"$T_{\mathrm{eff}}$ range",
+            r"Wavelength range",
+            "Reference",
+        ]:
+            entry = nodes.entry()
+            entry += nodes.paragraph(text=title)
+            header_row += entry
+
+        thead += header_row
+
+        # --- Data rows
         for model_key, model in data.items():
-            list_item = nodes.list_item()
-            paragraph = nodes.paragraph()
+            row = nodes.row()
 
             # --- Model name (linked if URL exists)
             model_name = model.get("name", model_key)
             url = model.get("url")
 
+            name_entry = nodes.entry()
+            name_para = nodes.paragraph()
+
             if url:
-                name_node = nodes.reference(
+                name_para += nodes.reference(
                     text=model_name,
                     refuri=url,
                     internal=False,
                 )
             else:
-                name_node = nodes.strong(text=model_name)
+                name_para += nodes.strong(text=model_name)
 
-            paragraph += nodes.strong(text=model_name) if not url else name_node
+            name_entry += name_para
+            row += name_entry
 
             # --- Teff range
+            teff_entry = nodes.entry()
             teff = model.get("teff range")
             if teff:
-                paragraph += nodes.Text(" — ")
-                paragraph += nodes.math(
-                    text=rf"T_{{\mathrm{{eff}}}} \in [{teff[0]}, {teff[1]}]\,\mathrm{{K}}"
+                teff_entry += nodes.paragraph(
+                    "",
+                    "",
+                    nodes.math(
+                        text=rf"T_{{\mathrm{{eff}}}} \in [{teff[0]}, {teff[1]}]\,\mathrm{{K}}"
+                    ),
                 )
+            row += teff_entry
+
+            # --- Wavelength range
+            wave_entry = nodes.entry()
+            wavel_range = model.get("wavelength range")
+            if wavel_range:
+                wave_entry += nodes.paragraph(
+                    "",
+                    "",
+                    nodes.math(
+                        text=rf"\lambda \in [{wavel_range[0]}, {wavel_range[1]}]\,\mu\mathrm{{m}}"
+                    ),
+                )
+            row += wave_entry
 
             # --- Reference
+            ref_entry = nodes.entry()
             reference = model.get("reference")
             if reference:
-                paragraph += nodes.Text(f" — {reference}")
+                ref_entry += nodes.paragraph(text=reference)
+            row += ref_entry
 
-            list_item += paragraph
-            bullet_list += list_item
+            tbody += row
 
-        return [bullet_list]
+        return [table]
 
 
 def setup(app):
@@ -75,7 +121,7 @@ def setup(app):
     Register the ``json_models`` directive.
     """
 
-    app.add_directive("json_models", JsonModelListDirective)
+    app.add_directive("json_models", JsonModelTableDirective)
 
     return {
         "version": "0.2",
