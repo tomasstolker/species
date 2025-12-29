@@ -11,7 +11,7 @@ Introduction
 Supported data
 --------------
 
-The toolkit benefits from publicly available data resources such as atmospheric model spectra, photometric and spectral libraries, evolutionary tracks, and photometry of directly imaged companions. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and process the data.
+The toolkit benefits from publicly available data such as atmospheric model spectra, evolutionary tracks, and photometric and spectral libraries. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and process the data.
 
 The following data and models are currently supported:
 
@@ -42,9 +42,6 @@ The following data and models are currently supported:
 - `Sonora Elf Owl Y-type <https://zenodo.org/records/10381250>`_
 
 .. tip::
-  It is also possible to add your own custom grid of model spectra with :func:`~species.data.database.Database.add_custom_model()`.
-
-.. tip::
   The :func:`~species.data.database.Database.available_models()` method of the :class:`~species.data.database.Database` class can be used for printing a detailed overview of all available model grids:
 
   .. code-block:: python
@@ -56,6 +53,9 @@ The following data and models are currently supported:
 
      database = Database()
      database.available_models()
+
+.. tip::
+  It is also possible to add your own custom grid of model spectra with :func:`~species.data.database.Database.add_custom_model()`.
 
 **Evolutionary models**
 

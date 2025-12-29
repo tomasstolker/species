@@ -30,8 +30,8 @@ def download_filter(
     ----------
     filter_id : str
         Filter name as listed on the website of the `SVO
-        Filter Profile Service
-        <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_.
+        Filter Profile Service <http://svo2.cab.inta-csic
+        es/svo/theory/fps/>`_.
     input_path : str
         Folder where the data is located.
 
@@ -103,7 +103,7 @@ def download_filter(
         # The filter profile of Br_alpha has been digitized from
         # https://www2.keck.hawaii.edu/inst/nirc2/filters.html
 
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/Keck_NIRC2.NB_4.05.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/Keck_NIRC2.NB_4.05.dat"
         filter_path = os.path.join(input_path, "Keck_NIRC2.NB_4.05.dat")
 
         pooch.retrieve(
@@ -124,7 +124,7 @@ def download_filter(
         # The filter profile of the Y band has been
         # adopted from Hillenbrand et al. (2002)
 
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/Keck_NIRC.Y.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/Keck_NIRC.Y.dat"
         filter_path = os.path.join(input_path, "Keck_NIRC.Y.dat")
 
         pooch.retrieve(
@@ -164,7 +164,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.Lp":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Lp.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Lp.dat"
         filter_path = os.path.join(input_path, "TC_filter_Lp.dat")
 
         pooch.retrieve(
@@ -182,7 +182,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.Mp":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Mp.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Mp.dat"
         filter_path = os.path.join(input_path, "TC_filter_Mp.dat")
 
         pooch.retrieve(
@@ -200,7 +200,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.N1":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_N1.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_N1.dat"
         filter_path = os.path.join(input_path, "TC_filter_N1.dat")
 
         pooch.retrieve(
@@ -218,7 +218,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.Q1":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Q1.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Q1.dat"
         filter_path = os.path.join(input_path, "TC_filter_Q1.dat")
 
         pooch.retrieve(
@@ -236,7 +236,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ALMA/band3":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band3.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/alma_band3.dat"
         filter_path = os.path.join(input_path, "alma_band3.dat")
 
         pooch.retrieve(
@@ -254,7 +254,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ALMA/band6":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band6.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/alma_band6.dat"
         filter_path = os.path.join(input_path, "alma_band6.dat")
 
         pooch.retrieve(
@@ -272,7 +272,7 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ALMA/band7":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band7.dat"
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/alma_band7.dat"
         filter_path = os.path.join(input_path, "alma_band7.dat")
 
         pooch.retrieve(
@@ -292,9 +292,9 @@ def download_filter(
     else:
         url = "http://svo2.cab.inta-csic.es/svo/theory/fps/fps.php?ID=" + filter_id
         filter_path = os.path.join(input_path, "filter.xml")
-        urlretrieve(url, filter_path)
 
         try:
+            urlretrieve(url, filter_path)
             table = parse_single_table(filter_path)
 
             wavelength = table.array["Wavelength"]
