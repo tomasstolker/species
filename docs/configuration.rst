@@ -3,7 +3,7 @@
 Configuration
 =============
 
-A configuration file with the name `species_config.ini` is required in the working folder. The configuration file contains the global settings, such as the path of the HDF5 database and the location where the data will be dowloaded. These can be provided as absolute paths or relative to the working folder. The file also contains the magnitude of Vega that is used for converting between magnitudes and fluxes. This is what the content of the configuration file may look like:
+A configuration file with the name `species_config.ini` is required in the working folder. It contains the global settings, such as the path of the HDF5 :ref:`database`, the folder where data will be dowloaded, and the magnitude of Vega.
 
 .. code-block:: ini
 
@@ -12,27 +12,27 @@ A configuration file with the name `species_config.ini` is required in the worki
    data_folder = /path/to/store/data/
    vega_mag = 0.03
 
-In this case, the database is stored in the working folder and an absolute path points to the folder where the data is downloaded.
+Paths should be either absolute or relative to the working folder, so in this example the database is located in the working folder.
 
 .. important::
-   The configuration file should always be located in the working folder. Are you not sure about your current working folder? Try running Python's `os.getcwd() <https://docs.python.org/3/library/os.html#os-file-dir>`_ function:
+   The configuration file should either be located in the working folder, so the folder returned by `os.getcwd() <https://docs.python.org/3/library/os.html#os-file-dir>`_, or the file path can be set with the ``SPECIES_CONFIG`` environment variable:
 
-      .. code-block:: python
+.. code-block:: python
 
-         >>> import os
-         >>> os.getcwd()
+   >>> import os
+   >>> os.environ["SPECIES_CONFIG"] = "/path/to/species_config.ini"
 
-The workflow with *species* is now initiated with the :class:`~species.core.species_init.SpeciesInit` class:
+The workflow with *species* is initiated with the :class:`~species.core.species_init.SpeciesInit` class:
 
 .. code-block:: python
 
    >>> import species
    >>> species.SpeciesInit()
 
-A configuration file with default values is automatically created when `species` is initiated and the file is not present in the working folder.
+A configuration file with default values is created in case this file is not present in the working folder.
 
 .. tip::
-   The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.species_init.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file (:ref:`database` section).
+   The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by new instances of :class:`~species.core.species_init.SpeciesInit`. Also the HDF5 :ref:`database` can be reused by including the same `database` path in the configuration file.
 
 .. important::
    A flux-calibrated spectrum of Vega is used for the conversion between a flux density and magnitude. The magnitude of Vega is set to 0.03 for all filters by default. If needed, the magnitude of Vega can be adjusted with the ``vega_mag`` parameter in the configuration file.

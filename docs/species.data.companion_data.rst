@@ -9,13 +9,13 @@ species.data.companion\_data.companion\_spectra module
 
 .. automodule:: species.data.companion_data.companion_spectra
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: species.data.companion_data
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

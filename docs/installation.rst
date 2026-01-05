@@ -3,7 +3,7 @@
 Installation
 ============
 
-``species`` is available on `PyPI <https://pypi.org/project/species/>`_ and `Github <https://github.com/tomasstolker/species>`_.
+``species`` is available on `PyPI <https://pypi.org/project/species/>`_ and `GitHub <https://github.com/tomasstolker/species>`_.
 
 It is recommended to install ``species`` within a `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_.
 
@@ -38,13 +38,13 @@ For running free atmospheric retrievals, it is required to separately install ``
 .. important::
    The ``PyMultiNest`` package requires the manual installation of ``MultiNest``. Please follow the `instructions <https://johannesbuchner.github.io/PyMultiNest/install.html>`_ for the building the library and make sure that the ``LD_LIBRARY_PATH`` (on Linux) or ``DYLD_LIBRARY_PATH`` (on macOS) environment variable is set. It is possible to use many of the functionalities in ``species`` without installing ``MultiNest``.
 
-Installation from Github
+Installation from GitHub
 ------------------------
 
 Using pip
 ^^^^^^^^^
 
-The repository on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip <https://packaging.python.org/tutorials/installing-packages/>`_. The following will include the minimum of required dependencies:
+The repository on `GitHub <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip <https://packaging.python.org/tutorials/installing-packages/>`_. The following will include the minimum of required dependencies:
 
 .. code-block:: console
 
@@ -78,18 +78,18 @@ Or, to install with all dependencies:
 
     $ pip install ".[full]"
 
-New commits can be pulled from Github once a local copy of the repository exists:
+New commits can be pulled from GitHub once a local copy of the repository exists:
 
 .. code-block:: console
 
     $ git pull origin main
 
-Contributions and pull requests are welcome (see :ref:`contributing` section). In that case, please fork the `species` repository on the Github page and clone your own fork instead of the main repository.
+Contributions and pull requests are welcome (see :ref:`contributing` section). In that case, please fork the `species` repository on the GitHub page and clone your own fork instead of the main repository.
 
 Testing `species`
 -----------------
 
-The installation can now be tested, for example by starting Python in interactive mode and initializing a workflow in the current working folder:
+To test the installation, we can initialize a ``species`` workflow:
 
 .. code-block:: python
 

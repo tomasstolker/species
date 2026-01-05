@@ -18,21 +18,23 @@ sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
 # -- Project information -----------------------------------------------------
 
-project = 'species'
-copyright = '2025, Tomas Stolker'
-author = 'Tomas Stolker'
+project = "species"
+copyright = "2026, Tomas Stolker"
+author = "Tomas Stolker"
 
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
+
 extensions = [
-    'sphinx_json',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'nbsphinx'
+    "sphinx_json",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "nbsphinx"
 ]
 
 # Disable notebook timeout
@@ -41,7 +43,7 @@ nbsphinx_timeout = -1
 # Allow errors from notebooks
 nbsphinx_allow_errors = True
 
-autoclass_content = 'both'
+autoclass_content = "both"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -49,35 +51,34 @@ templates_path = []
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build',
-                    'Thumbs.db',
-                    '.DS_Store',
-                    'tutorials/.ipynb_checkpoints/*']
+
+exclude_patterns = ["_build",
+                    "Thumbs.db",
+                    ".DS_Store",
+                    "tutorials/.ipynb_checkpoints/*"]
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = 'sphinx_book_theme'
+html_theme = "sphinxawesome_theme"
 
 html_theme_options = {
-    'path_to_docs': 'docs',
-    'repository_url': 'https://github.com/tomasstolker/species',
-    'repository_branch': 'main',
-    'launch_buttons': {
-        'notebook_interface': 'jupyterlab',
+    "show_breadcrumbs": True,
+    "show_scrolltop": True,
+    "show_prev_next": True,
+    "main_nav_links": {
+        "GitHub": "https://github.com/tomasstolker/species",
+        "PyPI": "https://pypi.org/project/species/",
     },
-    'use_edit_page_button': True,
-    'use_issues_button': True,
-    'use_repository_button': True,
-    'use_download_button': True,
 }
 
-html_static_path = ['_static']
+html_context = {
+    "github_user": "tomasstolker",
+    "github_repo": "species",
+    "github_version": "main",
+    "doc_path": "docs",
+}
 
-html_search_language = 'en'
+html_static_path = []
 
-html_logo = '_static/species_logo.png'
-
-html_context = {'display_github': True,
-                'github_user': 'tomasstolker',
-                'github_repo': 'species',
-                'github_version': 'main/docs/'}
+html_logo = "_static/species_logo.png"
+html_search_language = "en"

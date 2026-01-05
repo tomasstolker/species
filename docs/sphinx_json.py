@@ -1,5 +1,6 @@
 """
-Sphinx extension providing a directive to render model metadata from JSON.
+Sphinx extension providing a directive
+to render model metadata from JSON.
 """
 
 import json
@@ -30,10 +31,10 @@ class JsonModelTableDirective(Directive):
         table = nodes.table()
         table["classes"].append("json-model-table")
 
-        tgroup = nodes.tgroup(cols=4)
+        tgroup = nodes.tgroup(cols=5)
         table += tgroup
 
-        for _ in range(4):
+        for _ in range(5):
             tgroup += nodes.colspec(colwidth=1)
 
         thead = nodes.thead()
@@ -45,8 +46,9 @@ class JsonModelTableDirective(Directive):
         header_row = nodes.row()
         for title in [
             "Model",
-            r"$T_{\mathrm{eff}}$ range",
-            r"Wavelength range",
+            r"$T_\mathrm{eff}$ range",
+            r"$\lambda/\Delta\lambda$",
+            "Wavelength range",
             "Reference",
         ]:
             entry = nodes.entry()
@@ -85,11 +87,20 @@ class JsonModelTableDirective(Directive):
                 teff_entry += nodes.paragraph(
                     "",
                     "",
-                    nodes.math(
-                        text=rf"T_{{\mathrm{{eff}}}} \in [{teff[0]}, {teff[1]}]\,\mathrm{{K}}"
-                    ),
+                    nodes.math(text=rf"[{teff[0]}, {teff[1]}]\,\mathrm{{K}}"),
                 )
             row += teff_entry
+
+            # --- Sampling resolution
+            res_entry = nodes.entry()
+            res = model.get("lambda/d_lambda")
+            if res:
+                res_entry += nodes.paragraph(
+                    "",
+                    "",
+                    nodes.math(text=f"{res}"),
+                )
+            row += res_entry
 
             # --- Wavelength range
             wave_entry = nodes.entry()
@@ -99,7 +110,7 @@ class JsonModelTableDirective(Directive):
                     "",
                     "",
                     nodes.math(
-                        text=rf"\lambda \in [{wavel_range[0]}, {wavel_range[1]}]\,\mu\mathrm{{m}}"
+                        text=rf"[{wavel_range[0]}, {wavel_range[1]}]\,\mu\mathrm{{m}}"
                     ),
                 )
             row += wave_entry
@@ -124,7 +135,7 @@ def setup(app):
     app.add_directive("json_models", JsonModelTableDirective)
 
     return {
-        "version": "0.2",
+        "version": "0.1",
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }

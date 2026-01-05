@@ -2280,7 +2280,7 @@ class Database:
         tag : str
             Database tag.
         sampler : str
-            Sampler ('emcee', 'multinest', 'ultranest', 'dynesty').
+            Sampler ('multinest', 'ultranest', 'dynesty').
         samples : np.ndarray
             Samples of the posterior.
         ln_prob : np.ndarray
@@ -2298,7 +2298,7 @@ class Database:
             additional scaling parameter. Not used if set to ``None``.
         attr_dict : dict, None
             Dictionary with data that will be stored as attributes
-            of the dataset with samples.
+            of the dataset with samples. Not used if set to ``None``.
 
         Returns
         -------
@@ -2379,20 +2379,6 @@ class Database:
                     count_scaling += 1
 
             dset.attrs["n_scaling"] = int(count_scaling)
-
-            # print("\nIntegrated autocorrelation time:")
-            #
-            # from emcee.autocorr import integrated_time
-            #
-            # for i, item in enumerate(modelpar):
-            #     auto_corr = integrated_time(samples[:, i], quiet=True)[0]
-            #
-            #     if item in fixed_param:
-            #         print(f"   - {item}: fixed")
-            #     else:
-            #         print(f"   - {item}: {auto_corr:.2f}")
-            #
-            #     dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
 
             for key, value in attr_dict.items():
                 dset.attrs[key] = value

@@ -6,6 +6,8 @@
         "wavelength range": [0.5, 40],
         "lambda/d_lambda": 2000,
         "teff range": [100, 6600],
+        "reference": "Allard et al. (2001)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2001ApJ...556..357A",
         "checksum": "991f3919b260443bb54c61501d80dddfafe05879715492f5d04aa319d774903a"
     },
     "ames-dusty": {
@@ -15,6 +17,8 @@
         "wavelength range": [0.5, 40],
         "lambda/d_lambda": 2000,
         "teff range": [500, 4000],
+        "reference": "Allard et al. (2001)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2001ApJ...556..357A",
         "checksum": "3aff09243479a01003bfebdf6886fdbffc902739b625b6134509b6928a840447"
     },
     "atmo": {
@@ -90,6 +94,8 @@
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 1000,
         "teff range": [10, 20000],
+        "reference": "Planck (1901)",
+        "url": "https://ui.adsabs.harvard.edu/abs/1901AnP...309..553P",
         "checksum": "afb8059f365378b7122e7170a62bfd312d3a21c5d514eb5aaab1558e69792d83"
     },
     "bt-cond": {
@@ -99,6 +105,8 @@
         "wavelength range": [0.1, 100],
         "lambda/d_lambda": 5000,
         "teff range": [800, 4000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "5b8d2bf3b280fe7016c5a4f569a9e1176292568cd73ecaf0223baf25e1a99d53"
     },
     "bt-cond-feh": {
@@ -108,6 +116,8 @@
         "wavelength range": [0.1, 100],
         "lambda/d_lambda": 5000,
         "teff range": [2600, 4000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "e357284c7e0082fa0eb7cbc78034f72bd731512de85813c325beb13d3c10f1ed"
     },
     "bt-dusty": {
@@ -117,6 +127,8 @@
         "wavelength range": [0.1, 100],
         "lambda/d_lambda": 5000,
         "teff range": [1000, 4000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "4d6c7af3388c5b86576df0dbe148fdec7f5c7817e1f83653a95bf994ab5a4f7c"
     },
     "bt-nextgen": {
@@ -126,6 +138,8 @@
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 2000,
         "teff range": [2600, 30000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "eb3dda397d296b7aa9e4d7549fd77eed5c6ff625e6265a2c09b86b4c1f986de7"
     },
     "bt-nextgen-highres": {
@@ -135,6 +149,8 @@
         "wavelength range": [0.1, 50],
         "lambda/d_lambda": 200000,
         "teff range": [2600, 30000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "c2fe40a6d8da4ee96834a58908b69fedc0cf4dffdf867d6591320a98b031b3ab"
     },
     "bt-nextgen-optical": {
@@ -144,6 +160,8 @@
         "wavelength range": [0.1, 1.0],
         "lambda/d_lambda": 500000,
         "teff range": [2600, 30000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "c195263c988cea59c9dacee23e4a9fc3878bc0b04c33e223cdcedb7464b1f9d3"
     },
     "bt-nextgen-subsolar": {
@@ -154,6 +172,8 @@
         "lambda/d_lambda": 2000,
         "teff range": [2600, 30000],
         "information": "[alpha/Fe] = 0.4",
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "54c193c90d2231a9b3c1567811988fbd770e57bef0b837ad31d77365aac20174"
     },
     "bt-settl": {
@@ -163,6 +183,8 @@
         "wavelength range": [0.1, 500],
         "lambda/d_lambda": 2000,
         "teff range": [400, 4000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "ca67668ebbf071d99f10ba2bf3092cdd9c0a13b2cc4688b4bd0da2d57e28300f"
     },
     "bt-settl-cifist": {
@@ -172,6 +194,8 @@
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 10000,
         "teff range": [1200, 7000],
+        "reference": "Allard et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A",
         "checksum": "a1a1510d2b3e47ddad43dfcba9c508cf1177fcaa615881d02522e3458132aa3f"
     },
     "drift-phoenix": {

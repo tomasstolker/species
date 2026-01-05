@@ -23,13 +23,13 @@ species.data.database module
 
 .. automodule:: species.data.database
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: species.data
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

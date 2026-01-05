@@ -1,7 +1,7 @@
 """
 Module for adding young, M- and L-type dwarf spectra from
 `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/
-2014A%26A...562A.127B/abstract>`_ to the database.
+2014A%26A...562A.127B>`_ to the database.
 """
 
 import gzip
@@ -23,7 +23,7 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the SINFONI spectra of young, M- and L-type
     dwarfs from `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.
-    edu/abs/2014A%26A...562A.127B/abstract>`_ to the database.
+    edu/abs/2014A%26A...562A.127B>`_ to the database.
 
     Parameters
     ----------

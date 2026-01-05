@@ -9,29 +9,29 @@ species.core.box module
 
 .. automodule:: species.core.box
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 species.core.constants module
 -----------------------------
 
 .. automodule:: species.core.constants
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 species.core.species\_init module
 ---------------------------------
 
 .. automodule:: species.core.species_init
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: species.core
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

@@ -3,7 +3,7 @@
 Data
 ====
 
-On this page you find a list of the supported data. Please give credit to the relevant references when using any of the external data in a publication. Support for other datasets can be requested by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
+On this page you find a list of the supported data. Please give credit to the relevant references when using any of the external data in a publication. Support for other datasets can be requested by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the GitHub page.
 
 Atmospheric models
 ------------------
@@ -62,7 +62,7 @@ Calibration
 -----------
 
 - Filters from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
-- HST `spectrum of Vega <https://www.stsci.edu/hst/instrumentation/reference-data-for-calibration-and-tools/astronomical-catalogs/calspec>`_
+- `HST flux-calibrated spectrum of Vega <https://www.stsci.edu/hst/instrumentation/reference-data-for-calibration-and-tools/astronomical-catalogs/calspec>`_
 
 Dust extinction
 ---------------

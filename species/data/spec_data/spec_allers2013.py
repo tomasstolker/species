@@ -1,7 +1,7 @@
 """
 Module for adding young, M- and L-type dwarf spectra from
 `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/
-2013ApJ...772...79A/abstract>`_ to the . These spectra are
+2013ApJ...772...79A>`_ to the . These spectra are
 also available in the `SpeX Prism Library Analysis Toolkit
 <https://github.com/aburgasser/splat>`_.
 """
@@ -26,7 +26,7 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the spectra of young, M- and L-type dwarfs
     from `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/
-    2013ApJ...772...79A/abstract>`_  to the database.
+    2013ApJ...772...79A>`_  to the database.
 
     Parameters
     ----------
