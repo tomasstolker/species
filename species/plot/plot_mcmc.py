@@ -1090,7 +1090,7 @@ def plot_posterior(
                             zorder=1,
                         )
 
-                    elif i > j and box_param[i] in grid_points:
+                    if i > j and box_param[i] in grid_points:
                         ax_xmin, ax_xmax = ax.get_xlim()
                         x_span = ax_xmax - ax_xmin
 
