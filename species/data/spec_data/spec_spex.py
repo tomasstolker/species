@@ -10,14 +10,14 @@ import pandas as pd
 import pooch
 
 from astropy.io.votable import parse_single_table
-from typeguard import typechecked
+from beartype import beartype
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.util.data_util import update_sptype
 from species.util.query_util import get_simbad
 
 
-@typechecked
+@beartype
 def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the SpeX Prism Spectral Library

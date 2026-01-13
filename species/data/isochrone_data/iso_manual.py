@@ -6,12 +6,12 @@ evolutionary tracks to the database.
 import h5py
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
 
 from species.core import constants
 
 
-@typechecked
+@beartype
 def add_manual(
     database: h5py._hl.files.File, tag: str, file_name: str, model_name: str
 ) -> None:

@@ -9,14 +9,13 @@ import os
 import sys
 import warnings
 
-from typing import Dict, List, Optional, Tuple, Union
-
 import h5py
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from scipy.stats import norm, truncnorm
 from tqdm.auto import tqdm
-from typeguard import typechecked
 
 from species.core import constants
 from species.read.read_isochrone import ReadIsochrone
@@ -32,7 +31,7 @@ class FitEvolution:
     in formation time is negligible at the age of the system.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         evolution_model: str,
@@ -362,7 +361,7 @@ class FitEvolution:
                         f"   - {param_key} = {param_value[0]:.2f} +/- {param_value[1]:.2f}"
                     )
 
-    @typechecked
+    @beartype
     def run_multinest(
         self,
         tag: str,
@@ -430,7 +429,7 @@ class FitEvolution:
         for i, item in enumerate(self.model_par):
             cube_index[item] = i
 
-        @typechecked
+        @beartype
         def ln_prior(cube, n_dim, n_param) -> None:
             """
             Function to transform the unit cube into the parameter
@@ -544,7 +543,7 @@ class FitEvolution:
                         + (self.bounds[key][1] - self.bounds[key][0]) * cube[i]
                     )
 
-        @typechecked
+        @beartype
         def ln_like(params, n_dim, n_param) -> Union[float, np.float64]:
             """
             Function for return the log-likelihood for

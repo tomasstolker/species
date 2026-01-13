@@ -5,18 +5,17 @@ Module for plotting atmospheric retrieval results.
 import sys
 import warnings
 
-from typing import Optional, Tuple
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Optional, Tuple
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import LogNorm
 from matplotlib.ticker import MultipleLocator
 from scipy.interpolate import interp1d
 from scipy.stats import lognorm
-from typeguard import typechecked
 
 from species.read.read_radtrans import ReadRadtrans
 from species.util.retrieval_util import (
@@ -29,7 +28,7 @@ from species.util.retrieval_util import (
 )
 
 
-@typechecked
+@beartype
 def plot_pt_profile(
     tag: str,
     random: Optional[int] = 100,
@@ -830,7 +829,7 @@ def plot_pt_profile(
     return fig
 
 
-@typechecked
+@beartype
 def plot_opacities(
     tag: str,
     radtrans: ReadRadtrans,
@@ -1316,7 +1315,7 @@ def plot_opacities(
     return fig
 
 
-@typechecked
+@beartype
 def plot_clouds(
     tag: str,
     offset: Optional[Tuple[float, float]] = None,
@@ -1528,7 +1527,7 @@ def plot_clouds(
     return fig
 
 
-@typechecked
+@beartype
 def plot_abundances(
     tag: str,
     xlim: Optional[Tuple[float, float]] = None,

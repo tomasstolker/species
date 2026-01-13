@@ -2,17 +2,16 @@
 Utility functions for generating ``petitRADTRANS`` spectra.
 """
 
-from typing import Dict, List, Optional
-
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, List, Optional
 
 from species.core.box import ModelBox
 from species.read.read_radtrans import ReadRadtrans
 
 
-@typechecked
+@beartype
 def retrieval_spectrum(
     indices: Dict[str, np.int64],
     chemistry: str,

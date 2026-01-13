@@ -2,16 +2,15 @@
 Utility functions for converting quantities.
 """
 
-from typing import Optional, Tuple, Union
-
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional, Tuple, Union
 
 from species.core import constants
 
 
-@typechecked
+@beartype
 def apparent_to_absolute(
     app_mag: Union[
         Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
@@ -60,7 +59,7 @@ def apparent_to_absolute(
     return abs_mag, abs_err
 
 
-@typechecked
+@beartype
 def absolute_to_apparent(
     abs_mag: Union[
         Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
@@ -100,7 +99,7 @@ def absolute_to_apparent(
     return app_mag, abs_mag[1]
 
 
-@typechecked
+@beartype
 def parallax_to_distance(
     parallax: Union[
         Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
@@ -138,7 +137,7 @@ def parallax_to_distance(
     return distance, distance_error
 
 
-@typechecked
+@beartype
 def logg_to_mass(
     logg: Union[float, np.ndarray], radius: Union[float, np.ndarray]
 ) -> Union[float, np.ndarray]:
@@ -165,7 +164,7 @@ def logg_to_mass(
     return mass / constants.M_JUP
 
 
-@typechecked
+@beartype
 def logg_to_radius(
     logg: Union[float, np.ndarray], mass: Union[float, np.ndarray]
 ) -> Union[float, np.ndarray]:
@@ -192,7 +191,7 @@ def logg_to_radius(
     return radius / constants.R_JUP
 
 
-@typechecked
+@beartype
 def mass_to_logg(
     mass: Union[float, np.ndarray], radius: Union[float, np.ndarray]
 ) -> Union[float, np.ndarray]:
@@ -218,7 +217,7 @@ def mass_to_logg(
     return np.log10(gravity)
 
 
-@typechecked
+@beartype
 def luminosity_to_teff(
     luminosity: Union[float, np.ndarray], radius: Union[float, np.ndarray]
 ) -> Union[float, np.ndarray]:

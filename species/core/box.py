@@ -2,9 +2,10 @@
 Module with the  ``Box`` classes and ``create_box`` function.
 """
 
-from typing import List, Union
-
 import numpy as np
+
+from beartype import beartype
+from beartype.typing import List, Union
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter

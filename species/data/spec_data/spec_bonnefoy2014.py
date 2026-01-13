@@ -13,12 +13,12 @@ import numpy as np
 import pooch
 
 from astropy.io import fits
-from typeguard import typechecked
+from beartype import beartype
 
 from species.util.data_util import extract_tarfile, remove_directory
 
 
-@typechecked
+@beartype
 def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the SINFONI spectra of young, M- and L-type

@@ -5,23 +5,23 @@ Module for adding a custom grid of model spectra to the database.
 import warnings
 
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import List, Optional, Tuple, Union
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from spectres.spectral_resampling_numba import spectres_numba
-from typeguard import typechecked
 
 from species.util.core_util import print_section
 from species.util.data_util import sort_data, write_data, add_missing
 from species.util.spec_util import create_wavelengths
 
 
-@typechecked
+@beartype
 def add_custom_model_grid(
     model_name: str,
     data_path: Union[str, Path],

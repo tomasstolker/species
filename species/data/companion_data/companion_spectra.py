@@ -6,14 +6,14 @@ import json
 import pooch
 
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, Optional, Tuple
 
 from species.util.core_util import print_section
 
 
-@typechecked
+@beartype
 def companion_spectra(
     input_path: Path, comp_name: str, verbose: bool = True
 ) -> Optional[Dict[str, Tuple[str, Optional[str], float]]]:

@@ -2,11 +2,10 @@
 Module adding evolutionary tracks to the database.
 """
 
-from typing import Optional
-
 import h5py
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional
 
 from species.data.isochrone_data.iso_ames import add_ames
 from species.data.isochrone_data.iso_atmo import add_atmo
@@ -24,7 +23,7 @@ from species.data.isochrone_data.iso_sonora_diamondback import add_sonora_diamon
 from species.data.isochrone_data.iso_spiegel2012 import add_spiegel2012
 
 
-@typechecked
+@beartype
 def add_isochrone_grid(
     data_folder: str,
     hdf5_file: h5py._hl.files.File,

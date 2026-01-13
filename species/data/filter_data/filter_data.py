@@ -7,17 +7,17 @@ import os
 import warnings
 
 from urllib.request import urlretrieve
-from typing import Optional, Tuple
 
 import h5py
 import numpy as np
 import pooch
 
 from astropy.io.votable import parse_single_table
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional, Tuple
 
 
-@typechecked
+@beartype
 def download_filter(
     filter_id: str,
     input_path: str,
@@ -390,7 +390,7 @@ def download_filter(
     return wavelength, transmission, det_type
 
 
-@typechecked
+@beartype
 def add_filter_profile(
     input_path: str, database: h5py._hl.files.File, filter_name: str
 ) -> None:

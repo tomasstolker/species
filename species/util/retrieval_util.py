@@ -7,19 +7,18 @@ This module was put together many contributions by Paul Mollière
 import copy
 import warnings
 
-from typing import Dict, List, Optional, Tuple, Union
-
 import matplotlib.pyplot as plt
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from scipy.interpolate import interp1d, PchipInterpolator
 from scipy.ndimage import gaussian_filter
-from typeguard import typechecked
 
 from species.core import constants
 
 
-@typechecked
+@beartype
 def get_line_species() -> List[str]:
     """
     Function to get the list of the molecular and atomic line species.
@@ -64,7 +63,7 @@ def get_line_species() -> List[str]:
     ]
 
 
-@typechecked
+@beartype
 def pt_ret_model(
     temp_3: Optional[np.ndarray],
     delta: float,
@@ -216,7 +215,7 @@ def pt_ret_model(
 
     # Add the three temperature-point P-T description above tau = 0.1
 
-    @typechecked
+    @beartype
     def press_tau(tau: float) -> float:
         """
         Function to return the pressure in cgs units at a given
@@ -350,7 +349,7 @@ def pt_ret_model(
     return tret, press_tau(1.0) / 1e6, conv_press
 
 
-@typechecked
+@beartype
 def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
@@ -405,7 +404,7 @@ def pt_spline_interp(
     return temp_interp
 
 
-@typechecked
+@beartype
 def create_pt_profile(
     cube,
     cube_index: Dict[str, float],
@@ -556,7 +555,7 @@ def create_pt_profile(
     return temp, knot_temp, phot_press, conv_press
 
 
-@typechecked
+@beartype
 def make_half_pressure_better(
     p_base: Dict[str, float], pressure: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -620,7 +619,7 @@ def make_half_pressure_better(
     return press_out[:, 0], press_out[:, 1].astype("int")
 
 
-@typechecked
+@beartype
 def create_abund_dict(
     abund_in: Dict[str, np.ndarray],
     line_species: List[str],
@@ -730,7 +729,7 @@ def create_abund_dict(
     return abund_out
 
 
-@typechecked
+@beartype
 def calc_spectrum_clear(
     rt_object,
     pressure: np.ndarray,
@@ -921,7 +920,7 @@ def calc_spectrum_clear(
     return 1e4 * rad_wavel, 1e-7 * rad_flux, extra_out
 
 
-@typechecked
+@beartype
 def calc_spectrum_clouds(
     rt_object,
     pressure: np.ndarray,
@@ -1260,7 +1259,7 @@ def calc_spectrum_clouds(
     if "log_kappa_0" in cloud_dict:
         # Cloud model 2
 
-        @typechecked
+        @beartype
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
             p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
             kappa_0 = 10.0 ** cloud_dict["log_kappa_0"]  # (cm2 g-1)
@@ -1288,7 +1287,7 @@ def calc_spectrum_clouds(
 
             return (1.0 - cloud_dict["albedo"]) * kappa_tot
 
-        @typechecked
+        @beartype
         def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
             p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
             kappa_0 = 10.0 ** cloud_dict["log_kappa_0"]  # (cm2 g-1)
@@ -1319,7 +1318,7 @@ def calc_spectrum_clouds(
     elif "log_kappa_abs" in cloud_dict:
         # Powerlaw absorption and scattering opacities
 
-        @typechecked
+        @beartype
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
             p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
             kappa_0 = 10.0 ** cloud_dict["log_kappa_abs"]  # (cm2 g-1)
@@ -1336,7 +1335,7 @@ def calc_spectrum_clouds(
 
         if "log_kappa_sca" in cloud_dict:
 
-            @typechecked
+            @beartype
             def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
                 p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
                 kappa_0 = 10.0 ** cloud_dict["log_kappa_sca"]  # (cm2 g-1)
@@ -1368,7 +1367,7 @@ def calc_spectrum_clouds(
     elif "log_kappa_gray" in cloud_dict:
         # Gray clouds with cloud top
 
-        @typechecked
+        @beartype
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
             p_top = 10.0 ** cloud_dict["log_cloud_top"]  # (bar)
             kappa_gray = 10.0 ** cloud_dict["log_kappa_gray"]  # (cm2 g-1)
@@ -1382,7 +1381,7 @@ def calc_spectrum_clouds(
 
         if "albedo" in cloud_dict:
 
-            @typechecked
+            @beartype
             def kappa_scat(
                 wavel_micron: np.ndarray, press_bar: np.ndarray
             ) -> np.ndarray:
@@ -1460,7 +1459,7 @@ def calc_spectrum_clouds(
     return 1e4 * rad_wavel, 1e-7 * rad_flux, extra_out, mmw
 
 
-@typechecked
+@beartype
 def mass_frac_dict(
     log_x_abund: Dict[str, float],
     line_species: List[str],
@@ -1536,7 +1535,7 @@ def mass_frac_dict(
     return abund
 
 
-@typechecked
+@beartype
 def calc_metal_ratio(
     log_x_abund: Dict[str, float],
     line_species: List[str],
@@ -1644,7 +1643,7 @@ def calc_metal_ratio(
     )
 
 
-@typechecked
+@beartype
 def mean_molecular_weight(mass_frac: Dict[str, float]) -> float:
     """
     Function to calculate the mean molecular weight from a
@@ -1678,7 +1677,7 @@ def mean_molecular_weight(mass_frac: Dict[str, float]) -> float:
     return 1.0 / mmw_sum
 
 
-@typechecked
+@beartype
 def potassium_abundance(
     log_x_abund: Dict[str, float],
     line_species: List[str],
@@ -1779,7 +1778,7 @@ def potassium_abundance(
     return log_x_k
 
 
-@typechecked
+@beartype
 def log_x_cloud_base(
     c_o_ratio: float, metallicity: float, cloud_fractions: Dict[str, float]
 ) -> Dict[str, float]:
@@ -1828,7 +1827,7 @@ def log_x_cloud_base(
     return log_x_base
 
 
-@typechecked
+@beartype
 def solar_mixing_ratios() -> dict:
     """
     Function which returns the volume mixing ratios for solar elemental
@@ -1864,7 +1863,7 @@ def solar_mixing_ratios() -> dict:
     return n_fracs
 
 
-@typechecked
+@beartype
 def atomic_masses() -> dict:
     """
     Function which returns the atomic and molecular masses.
@@ -1936,7 +1935,7 @@ def atomic_masses() -> dict:
     return masses
 
 
-@typechecked
+@beartype
 def cloud_mass_fraction(
     composition: str, metallicity: float, c_o_ratio: float
 ) -> float:
@@ -2016,7 +2015,7 @@ def cloud_mass_fraction(
     return x_cloud / mass_norm
 
 
-@typechecked
+@beartype
 def get_condensation_curve(
     composition: str,
     press: np.ndarray,
@@ -2080,7 +2079,7 @@ def get_condensation_curve(
     return tcond_p(press)
 
 
-@typechecked
+@beartype
 def find_cloud_deck(
     composition: str,
     press: np.ndarray,
@@ -2154,7 +2153,7 @@ def find_cloud_deck(
     return P_cloud
 
 
-@typechecked
+@beartype
 def scale_cloud_abund(
     params: Dict[str, float],
     rt_object,
@@ -2345,7 +2344,7 @@ def scale_cloud_abund(
     return log_x_scaled
 
 
-@typechecked
+@beartype
 def cube_to_dict(cube, cube_index: Dict[str, float]) -> Dict[str, float]:
     """
     Function to convert the parameter cube into a dictionary.
@@ -2371,7 +2370,7 @@ def cube_to_dict(cube, cube_index: Dict[str, float]) -> Dict[str, float]:
     return params
 
 
-@typechecked
+@beartype
 def list_to_dict(param_list: List[str], sample_val: np.ndarray) -> Dict[str, float]:
     """
     Function to convert the parameter cube into a dictionary.
@@ -2398,7 +2397,7 @@ def list_to_dict(param_list: List[str], sample_val: np.ndarray) -> Dict[str, flo
     return sample_dict
 
 
-@typechecked
+@beartype
 def return_T_cond_Fe(
     FeH: float, CO: float, MMW: float = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -2435,7 +2434,7 @@ def return_T_cond_Fe(
     return P_vap(T) / (x_cloud * MMW / masses["Fe"]), T
 
 
-@typechecked
+@beartype
 def return_T_cond_Fe_l(
     FeH: float, CO: float, MMW: float = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -2472,7 +2471,7 @@ def return_T_cond_Fe_l(
     return P_vap(T) / (x_cloud * MMW / masses["Fe"]), T
 
 
-@typechecked
+@beartype
 def return_T_cond_Fe_comb(
     FeH: float, CO: float, MMW: float = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -2507,7 +2506,7 @@ def return_T_cond_Fe_comb(
     return retP, T2
 
 
-@typechecked
+@beartype
 def return_T_cond_MgSiO3(
     FeH: float, CO: float, MMW: float = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -2546,7 +2545,7 @@ def return_T_cond_MgSiO3(
     return P_vap(T) / (x_cloud * MMW / m_mgsio3), T
 
 
-@typechecked
+@beartype
 def return_T_cond_Mg2SiO4(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for Mg2SiO4.
@@ -2573,7 +2572,7 @@ def return_T_cond_Mg2SiO4(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
     return P_vap(temp), temp
 
 
-@typechecked
+@beartype
 def return_T_cond_Al2O3(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the condensation temperature for Al2O3.
@@ -2622,7 +2621,7 @@ def return_T_cond_Al2O3(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
     return pressure, t_cond
 
 
-@typechecked
+@beartype
 def return_T_cond_Na2S(
     FeH: float, CO: float, MMW: float = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -2663,7 +2662,7 @@ def return_T_cond_Na2S(
     return P_vap(T) / (x_cloud * MMW / m_na2s), T
 
 
-@typechecked
+@beartype
 def return_T_cond_KCl(
     FeH: float, CO: float, MMW: float = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -2701,7 +2700,7 @@ def return_T_cond_KCl(
     return P_vap(T) / (x_cloud * MMW / m_kcl), T
 
 
-@typechecked
+@beartype
 def convolve_spectrum(
     input_wavel: np.ndarray, input_flux: np.ndarray, spec_res: float
 ) -> np.ndarray:
@@ -2740,7 +2739,7 @@ def convolve_spectrum(
     return gaussian_filter(input_flux, sigma=sigma_filter, mode="nearest")
 
 
-@typechecked
+@beartype
 def quench_pressure(
     pressure: np.ndarray,
     temperature: np.ndarray,

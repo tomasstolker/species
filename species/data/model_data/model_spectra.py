@@ -8,16 +8,16 @@ import tarfile
 import warnings
 
 from pathlib import Path
-from typing import Optional, Tuple
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import pooch
 
+from beartype import beartype
+from beartype.typing import Optional, Tuple
 from scipy.optimize import curve_fit
 from spectres.spectral_resampling_numba import spectres_numba
-from typeguard import typechecked
 
 from species.util.core_util import print_section
 from species.util.data_util import add_missing, extract_tarfile, sort_data, write_data
@@ -25,7 +25,7 @@ from species.util.model_util import convert_model_name
 from species.util.spec_util import create_wavelengths
 
 
-@typechecked
+@beartype
 def add_model_grid(
     model_tag: str,
     input_path: str,

@@ -7,12 +7,11 @@ import math
 import warnings
 import configparser
 
-from typing import List, Optional, Union, Tuple
-
 import h5py
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import List, Optional, Union, Tuple
 
 from species.data.spec_data.spec_vega import add_vega
 from species.read.read_filter import ReadFilter
@@ -35,7 +34,7 @@ class SyntheticPhotometry:
     <https://species.readthedocs.io/en/latest/configuration.html>`_.
     """
 
-    @typechecked
+    @beartype
     def __init__(self, filter_name: str, zero_point: Optional[float] = None) -> None:
         """
         Parameters
@@ -98,7 +97,7 @@ class SyntheticPhotometry:
                 f"parameter is set to {self.vega_mag}."
             )
 
-    @typechecked
+    @beartype
     def calc_zero_point(self) -> Union[float, np.float64]:
         """
         Internal function for calculating the zero point of the
@@ -140,7 +139,7 @@ class SyntheticPhotometry:
 
         return self.spectrum_to_flux(wavelength_crop, flux_crop)[0]
 
-    @typechecked
+    @beartype
     def spectrum_to_flux(
         self,
         wavelength: np.ndarray,
@@ -368,7 +367,7 @@ class SyntheticPhotometry:
 
         return syn_flux, error_flux
 
-    @typechecked
+    @beartype
     def spectrum_to_magnitude(
         self,
         wavelength: np.ndarray,
@@ -504,7 +503,7 @@ class SyntheticPhotometry:
 
         return (app_mag, error_app_mag), (abs_mag, error_abs_mag)
 
-    @typechecked
+    @beartype
     def magnitude_to_flux(
         self,
         magnitude: float,
@@ -571,7 +570,7 @@ class SyntheticPhotometry:
 
         return flux, error_flux
 
-    @typechecked
+    @beartype
     def flux_to_magnitude(
         self,
         flux: float,

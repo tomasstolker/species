@@ -2,11 +2,10 @@
 Module for adding spectral libraries to the database.
 """
 
-from typing import List, Optional
-
 import h5py
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import List, Optional
 
 from species.data.spec_data.spec_allers2013 import add_allers2013
 from species.data.spec_data.spec_bonnefoy2014 import add_bonnefoy2014
@@ -16,7 +15,7 @@ from species.data.spec_data.spec_spex import add_spex
 from species.data.spec_data.spec_vega import add_vega
 
 
-@typechecked
+@beartype
 def add_spec_library(
     input_path: str,
     database: h5py._hl.files.File,

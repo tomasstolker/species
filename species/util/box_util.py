@@ -4,18 +4,17 @@ Utility functions for boxes.
 
 import warnings
 
-from typing import Dict, Optional
-
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, Optional
 
 from species.core.box import ObjectBox
 from species.read.read_model import ReadModel
 from species.util.core_util import print_section
 
 
-@typechecked
+@beartype
 def update_objectbox(
     objectbox: ObjectBox, model_param: Dict[str, float], model: Optional[str] = None
 ) -> ObjectBox:

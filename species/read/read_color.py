@@ -6,12 +6,12 @@ data from photometric and libraries.
 import os
 
 from configparser import ConfigParser
-from typing import Optional, Tuple
 
 import h5py
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional, Tuple
 
 from species.core.box import ColorColorBox, ColorMagBox, create_box
 from species.read.read_spectrum import ReadSpectrum
@@ -24,7 +24,7 @@ class ReadColorMagnitude:
     Class for reading color-magnitude data from the database.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self, library: str, filters_color: Tuple[str, str], filter_mag: str
     ) -> None:
@@ -83,7 +83,7 @@ class ReadColorMagnitude:
         print(f"Filters color: {self.filters_color}")
         print(f"Filter magnitude: {self.filter_mag}")
 
-    @typechecked
+    @beartype
     def get_color_magnitude(self, object_type: Optional[str] = None) -> ColorMagBox:
         """
         Function for extracting color-magnitude data from the selected
@@ -276,7 +276,7 @@ class ReadColorColor:
     Class for reading color-color data from the database.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self, library: str, filters_colors: Tuple[Tuple[str, str], Tuple[str, str]]
     ) -> None:
@@ -330,7 +330,7 @@ class ReadColorColor:
         print(f"Library type: {self.lib_type}")
         print(f"Filters colors: {self.filters_colors}")
 
-    @typechecked
+    @beartype
     def get_color_color(self, object_type: Optional[str] = None) -> ColorColorBox:
         """
         Function for extracting color-color data from the selected

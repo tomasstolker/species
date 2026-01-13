@@ -10,10 +10,10 @@ import h5py
 import numpy as np
 
 from astropy.io import fits
-from typeguard import typechecked
+from beartype import beartype
 
 
-@typechecked
+@beartype
 def add_optical_constants(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the optical constants of crystalline and amorphous
@@ -108,7 +108,7 @@ def add_optical_constants(input_path: str, database: h5py._hl.files.File) -> Non
     print(" [DONE]")
 
 
-@typechecked
+@beartype
 def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the extinction cross section of

@@ -8,12 +8,12 @@ from pathlib import Path
 import h5py
 import pooch
 
-from typeguard import typechecked
+from beartype import beartype
 
 from species.data.isochrone_data.iso_manual import add_manual
 
 
-@typechecked
+@beartype
 def add_btsettl(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the BT-Settl isochrone data to the database.

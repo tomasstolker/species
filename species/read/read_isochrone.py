@@ -6,13 +6,13 @@ import os
 import warnings
 
 from configparser import ConfigParser
-from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from scipy.interpolate import griddata, interp1d, RegularGridInterpolator
-from typeguard import typechecked
 
 from species.core.box import (
     ColorMagBox,
@@ -44,7 +44,7 @@ class ReadIsochrone:
     will set the ages to those of the original grid.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         tag: Optional[str] = None,
@@ -244,7 +244,7 @@ class ReadIsochrone:
                 "be set to 'linear' or 'cubic'."
             )
 
-    @typechecked
+    @beartype
     def read_data(
         self,
     ) -> Dict[str, np.ndarray]:
@@ -410,7 +410,7 @@ class ReadIsochrone:
 
         return iso_data
 
-    @typechecked
+    @beartype
     def _check_model(self, atmospheric_model: Optional[str]) -> str:
         """
         Function for matching the atmospheric model with
@@ -458,7 +458,7 @@ class ReadIsochrone:
 
         return atmospheric_model
 
-    @typechecked
+    @beartype
     def _update_param(
         self,
         atmospheric_model: str,
@@ -549,7 +549,7 @@ class ReadIsochrone:
 
         return model_param, extra_param
 
-    @typechecked
+    @beartype
     def get_points(self) -> Dict[str, np.ndarray]:
         """
         Function for returning a dictionary with the unique grid points
@@ -575,7 +575,7 @@ class ReadIsochrone:
 
         return grid_points
 
-    @typechecked
+    @beartype
     def get_isochrone(
         self,
         age: float,
@@ -943,7 +943,7 @@ class ReadIsochrone:
             masses=masses,
         )
 
-    @typechecked
+    @beartype
     def get_cooling_track(
         self,
         mass: float,
@@ -1245,7 +1245,7 @@ class ReadIsochrone:
             radius=radius,
         )
 
-    @typechecked
+    @beartype
     def get_color_magnitude(
         self,
         age: float,
@@ -1442,7 +1442,7 @@ class ReadIsochrone:
             age=age,
         )
 
-    @typechecked
+    @beartype
     def get_color_color(
         self,
         age: float,
@@ -1606,7 +1606,7 @@ class ReadIsochrone:
             age=age,
         )
 
-    @typechecked
+    @beartype
     def get_mass(
         self,
         age: float,
@@ -1672,7 +1672,7 @@ class ReadIsochrone:
 
         return self.mass_interp(interp_values)
 
-    @typechecked
+    @beartype
     def get_radius(
         self,
         age: float,
@@ -1738,7 +1738,7 @@ class ReadIsochrone:
 
         return self.radius_interp(interp_values)
 
-    @typechecked
+    @beartype
     def get_filters(self) -> Optional[List[str]]:
         """
         Function for get a list with filter names for which there
@@ -1766,7 +1766,7 @@ class ReadIsochrone:
 
         return filters
 
-    @typechecked
+    @beartype
     def get_photometry(
         self,
         age: float,
@@ -1860,7 +1860,7 @@ class ReadIsochrone:
 
         return phot_box
 
-    @typechecked
+    @beartype
     def get_spectrum(
         self,
         age: float,
@@ -1954,7 +1954,7 @@ class ReadIsochrone:
 
         return model_box
 
-    @typechecked
+    @beartype
     def contrast_to_mass(
         self,
         age: float,

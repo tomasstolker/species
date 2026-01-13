@@ -5,12 +5,11 @@ Utility functions for dust cross sections and extinction.
 import os
 import configparser
 
-from typing import List, Tuple, Union
-
 import h5py
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import List, Tuple, Union
 from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import lognorm
 
@@ -18,7 +17,7 @@ from species.read.read_filter import ReadFilter
 from species.data.misc_data.dust_data import add_cross_sections, add_optical_constants
 
 
-@typechecked
+@beartype
 def check_dust_database() -> str:
     """
     Function to check if the dust data is present in the
@@ -54,7 +53,7 @@ def check_dust_database() -> str:
     return database_path
 
 
-@typechecked
+@beartype
 def log_normal_distribution(
     radius_g: float, sigma_g: float, n_bins: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -120,7 +119,7 @@ def log_normal_distribution(
     return dn_grains, r_width, radii
 
 
-@typechecked
+@beartype
 def power_law_distribution(
     exponent: float, radius_min: float, radius_max: float, n_bins: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -172,7 +171,7 @@ def power_law_distribution(
     return dn_grains, r_width, radii
 
 
-@typechecked
+@beartype
 def dust_cross_section(
     dn_grains: np.ndarray,
     radii: np.ndarray,
@@ -233,7 +232,7 @@ def dust_cross_section(
     return c_ext  # (um2)
 
 
-@typechecked
+@beartype
 def calc_reddening(
     filters_color: Tuple[str, str],
     extinction: Tuple[str, float],
@@ -349,7 +348,7 @@ def calc_reddening(
     )
 
 
-@typechecked
+@beartype
 def interp_lognorm(verbose: bool = True) -> Tuple[
     RegularGridInterpolator,
     np.ndarray,
@@ -411,7 +410,7 @@ def interp_lognorm(verbose: bool = True) -> Tuple[
     return cross_sections, radius_g, sigma_g
 
 
-@typechecked
+@beartype
 def interp_powerlaw(verbose: bool = True) -> Tuple[
     RegularGridInterpolator,
     np.ndarray,
@@ -469,7 +468,7 @@ def interp_powerlaw(verbose: bool = True) -> Tuple[
     return cross_sections, radius_max, exponent
 
 
-@typechecked
+@beartype
 def ism_extinction(
     av_mag: float, rv_red: float, wavelengths: Union[np.ndarray, List[float], float]
 ) -> np.ndarray:
@@ -540,7 +539,7 @@ def ism_extinction(
     return av_mag * (a_coeff + b_coeff / rv_red)
 
 
-@typechecked
+@beartype
 def apply_ism_ext(
     wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
 ) -> np.ndarray:
@@ -567,7 +566,7 @@ def apply_ism_ext(
     return flux * 10.0 ** (-0.4 * ext_mag)
 
 
-@typechecked
+@beartype
 def convert_to_av(
     filter_name: str, filter_ext: float, v_band_red: float = 3.1
 ) -> float:

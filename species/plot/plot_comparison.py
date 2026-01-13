@@ -8,16 +8,15 @@ import configparser
 import os
 import warnings
 
-from typing import List, Optional, Tuple, Union
-
 import h5py
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from beartype import beartype
+from beartype.typing import List, Optional, Tuple, Union
 from matplotlib.ticker import AutoMinorLocator
 from scipy.interpolate import interp1d, RegularGridInterpolator
-from typeguard import typechecked
 
 from species.core import constants
 from species.read.read_model import ReadModel
@@ -31,7 +30,7 @@ from species.util.plot_util import (
 from species.util.spec_util import smooth_spectrum
 
 
-@typechecked
+@beartype
 def plot_statistic(
     tag: str,
     xlim: Optional[Tuple[float, float]] = None,
@@ -200,7 +199,7 @@ def plot_statistic(
     return fig
 
 
-@typechecked
+@beartype
 def plot_empirical_spectra(
     tag: str,
     n_spectra: Optional[int] = None,
@@ -463,7 +462,7 @@ def plot_empirical_spectra(
     return fig
 
 
-@typechecked
+@beartype
 def plot_grid_statistic(
     tag: str,
     upsample: bool = False,
@@ -981,7 +980,7 @@ def plot_grid_statistic(
     return fig
 
 
-@typechecked
+@beartype
 def plot_model_spectra(
     tag: str,
     n_spectra: Optional[int] = None,

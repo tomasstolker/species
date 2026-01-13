@@ -10,12 +10,12 @@ import numpy as np
 import pooch
 
 from astropy.io import fits
-from typeguard import typechecked
+from beartype import beartype
 
 from species.util.data_util import update_sptype
 
 
-@typechecked
+@beartype
 def add_jwst_ydwarfs(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the synthesized photometry from 'Precise

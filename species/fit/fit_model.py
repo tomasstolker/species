@@ -6,8 +6,6 @@ import os
 import sys
 import warnings
 
-from typing import Optional, Union, List, Tuple, Dict
-
 import dynesty
 import numpy as np
 
@@ -31,10 +29,11 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+from beartype import beartype
+from beartype.typing import Optional, Union, List, Tuple, Dict
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
 from scipy.stats import norm, truncnorm
-from typeguard import typechecked
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_model import ReadModel
@@ -72,7 +71,7 @@ class FitModel:
     of the spectra.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         object_name: str,
@@ -1595,7 +1594,7 @@ class FitModel:
 
                 print(f"   - {filter_item} = {self.weights[filter_item]:.2e}")
 
-    @typechecked
+    @beartype
     def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[float, float]], cube_index: Dict[str, int]
     ):
@@ -1676,7 +1675,7 @@ class FitModel:
 
         return param_out
 
-    @typechecked
+    @beartype
     def _lnlike_func(
         self,
         params,
@@ -2542,7 +2541,7 @@ class FitModel:
 
         return -0.5 * ln_like
 
-    @typechecked
+    @beartype
     def _create_attr_dict(self):
         """
         Internal function for creating a dictionary with attributes
@@ -2568,7 +2567,7 @@ class FitModel:
 
         return attr_dict
 
-    @typechecked
+    @beartype
     def run_multinest(
         self,
         tag: str,
@@ -2694,7 +2693,7 @@ class FitModel:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        @typechecked
+        @beartype
         def _lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
             """
             Function to transform the unit cube into the parameter
@@ -2718,7 +2717,7 @@ class FitModel:
 
             self._prior_transform(cube, self.bounds, self.cube_index)
 
-        @typechecked
+        @beartype
         def _lnlike_multinest(
             params, n_dim: int, n_param: int
         ) -> Union[float, np.float64]:
@@ -2873,7 +2872,7 @@ class FitModel:
                 attr_dict=self._create_attr_dict(),
             )
 
-    @typechecked
+    @beartype
     def run_ultranest(
         self,
         tag: str,
@@ -2973,7 +2972,7 @@ class FitModel:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        @typechecked
+        @beartype
         def _lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
             """
             Function to transform the unit cube into the parameter
@@ -2993,7 +2992,7 @@ class FitModel:
 
             return self._prior_transform(cube, self.bounds, self.cube_index)
 
-        @typechecked
+        @beartype
         def _lnlike_ultranest(params: np.ndarray) -> Union[float, np.float64]:
             """
             Function for returning the log-likelihood for the
@@ -3149,7 +3148,7 @@ class FitModel:
                 attr_dict=self._create_attr_dict(),
             )
 
-    @typechecked
+    @beartype
     def run_dynesty(
         self,
         tag: str,

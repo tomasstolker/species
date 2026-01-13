@@ -54,7 +54,7 @@ class TestCalibration:
         spec_box = read_calib.resample_spectrum(
             wavel_points=np.linspace(1.0, 5.0, 101),
             model_param=None,
-            spec_res=50.,
+            spec_res=50.0,
             apply_mask=True,
             interp_highres=True,
         )

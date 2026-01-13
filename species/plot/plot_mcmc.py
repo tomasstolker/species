@@ -4,14 +4,13 @@ Module for plotting MCMC results.
 
 import warnings
 
-from typing import List, Optional, Tuple, Union
-
 import corner
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import List, Optional, Tuple, Union
 from matplotlib.ticker import ScalarFormatter
 from scipy.stats import norm
 
@@ -37,7 +36,7 @@ from species.util.retrieval_util import (
 )
 
 
-@typechecked
+@beartype
 def plot_posterior(
     tag: str,
     title: Optional[str] = None,
@@ -1126,7 +1125,7 @@ def plot_posterior(
     return fig
 
 
-@typechecked
+@beartype
 def plot_mag_posterior(
     tag: str,
     filter_name: str,
@@ -1236,7 +1235,7 @@ def plot_mag_posterior(
     return samples, fig
 
 
-@typechecked
+@beartype
 def plot_size_distributions(
     tag: str,
     random: Optional[int] = None,
@@ -1388,7 +1387,7 @@ def plot_size_distributions(
     return fig
 
 
-@typechecked
+@beartype
 def plot_extinction(
     tag: str,
     random: Optional[int] = None,

@@ -9,16 +9,16 @@ import pathlib
 import warnings
 
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from matplotlib.colorbar import Colorbar
 from matplotlib.ticker import MultipleLocator
 from scipy.interpolate import interp1d
-from typeguard import typechecked
 
 from species.core.box import IsochroneBox, ColorMagBox, ColorColorBox
 from species.read.read_filter import ReadFilter
@@ -33,7 +33,7 @@ from species.util.plot_util import (
 )
 
 
-@typechecked
+@beartype
 def plot_color_magnitude(
     boxes: list,
     objects: Optional[
@@ -905,7 +905,7 @@ def plot_color_magnitude(
     return fig
 
 
-@typechecked
+@beartype
 def plot_color_color(
     boxes: list,
     objects: Optional[

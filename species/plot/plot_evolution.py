@@ -3,20 +3,19 @@ Module with functions for plotting the results obtained with the
 :class:`~species.fit.fit_evolution.FitEvolution` class.
 """
 
-from typing import List, Optional, Tuple
-
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import List, Optional, Tuple
 from matplotlib.ticker import AutoMinorLocator
 
 from species.read.read_isochrone import ReadIsochrone
 from species.util.core_util import print_section
 
 
-@typechecked
+@beartype
 def plot_cooling(
     tag: str,
     n_samples: int = 50,
@@ -333,7 +332,7 @@ def plot_cooling(
     return fig, cool_tracks, ran_indices
 
 
-@typechecked
+@beartype
 def plot_isochrones(
     tag: str,
     n_samples: int = 50,

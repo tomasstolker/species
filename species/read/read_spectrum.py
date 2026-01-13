@@ -5,12 +5,12 @@ Module with reading functionalities for spectral libraries.
 import os
 
 from configparser import ConfigParser
-from typing import List, Optional, Union
 
 import h5py
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import List, Optional, Union
 
 from species.core.box import PhotometryBox, SpectrumBox, create_box
 from species.data.spec_data.add_spec_data import add_spec_library
@@ -24,7 +24,7 @@ class ReadSpectrum:
     Class for reading spectral library data from the database.
     """
 
-    @typechecked
+    @beartype
     def __init__(self, spec_library: str, filter_name: Optional[str] = None) -> None:
         """
         Parameters
@@ -63,7 +63,7 @@ class ReadSpectrum:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
-    @typechecked
+    @beartype
     def get_spectrum(
         self,
         object_name: Optional[Union[str, List[str]]] = None,
@@ -275,7 +275,7 @@ class ReadSpectrum:
 
         return spec_box
 
-    @typechecked
+    @beartype
     def get_flux(
         self,
         object_name: Optional[Union[str, List[str]]] = None,
@@ -362,7 +362,7 @@ class ReadSpectrum:
             filter_name=filter_name_list,
         )
 
-    @typechecked
+    @beartype
     def get_magnitude(
         self,
         object_name: Optional[Union[str, List[str]]] = None,

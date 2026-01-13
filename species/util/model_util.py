@@ -7,16 +7,16 @@ import warnings
 
 from itertools import product
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 
 from astropy import units as u
 
+from beartype import beartype
+from beartype.typing import Dict, Optional, Tuple, Union
 # from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import RegularGridInterpolator
 from spectres.spectral_resampling_numba import spectres_numba
-from typeguard import typechecked
 
 from species.core import constants
 from species.core.box import ModelBox, create_box
@@ -24,7 +24,7 @@ from species.util.dust_util import ism_extinction
 from species.util.spec_util import create_wavelengths, smooth_spectrum
 
 
-@typechecked
+@beartype
 def convert_model_name(in_name: str) -> str:
     """
     Function for updating a model name for use in plots.
@@ -65,7 +65,7 @@ def convert_model_name(in_name: str) -> str:
     return out_name
 
 
-@typechecked
+@beartype
 def powerlaw_spectrum(
     wavel_range: Union[Tuple[float, float], Tuple[np.float32, np.float32]],
     model_param: Dict[str, float],
@@ -115,7 +115,7 @@ def powerlaw_spectrum(
     return model_box
 
 
-@typechecked
+@beartype
 def gaussian_spectrum(
     wavel_range: Union[Tuple[float, float], Tuple[np.float32, np.float32]],
     model_param: Dict[str, float],
@@ -182,7 +182,7 @@ def gaussian_spectrum(
     return model_box
 
 
-@typechecked
+@beartype
 def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str, float]:
     """
     Function for converting a dictionary with atmospheric parameters
@@ -220,7 +220,7 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
     return new_dict
 
 
-@typechecked
+@beartype
 def extract_disk_param(
     param_dict: Dict[str, float], disk_index: Optional[int] = None
 ) -> Dict[str, float]:
@@ -266,7 +266,7 @@ def extract_disk_param(
     return new_dict
 
 
-@typechecked
+@beartype
 def apply_obs(
     model_flux: np.ndarray,
     model_wavel: Optional[np.ndarray] = None,
@@ -494,7 +494,7 @@ def apply_obs(
     return model_flux
 
 
-@typechecked
+@beartype
 def rot_int_cmj(
     wavel: np.ndarray,
     flux: np.ndarray,
@@ -578,7 +578,7 @@ def rot_int_cmj(
     return ns / tarea
 
 
-@typechecked
+@beartype
 def check_nearest_spec(model_name: str, model_param: Dict[str, float]):
     """
     Check if the nearest grid points of the requested model parameters

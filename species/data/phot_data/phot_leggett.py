@@ -9,12 +9,12 @@ import numpy as np
 import pandas as pd
 import pooch
 
-from typeguard import typechecked
+from beartype import beartype
 
 from species.util.data_util import update_sptype
 
 
-@typechecked
+@beartype
 def add_leggett(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding photometric data of L, T, and Y dwarfs from

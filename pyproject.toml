@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "astropy",
+    "beartype",
     "dust-extinction",
     "h5py",
     "matplotlib",
@@ -27,7 +28,6 @@ dependencies = [
     "scipy",
     "spectres",
     "tqdm",
-    "typeguard",
 ]
 dynamic = ["version"]
 

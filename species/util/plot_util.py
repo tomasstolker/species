@@ -5,17 +5,17 @@ Module with utility functions for plotting data.
 import warnings
 
 from string import ascii_lowercase
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple
 
 from species.core import constants
 from species.util.model_util import convert_model_name
 
 
-@typechecked
+@beartype
 def sptype_to_index(
     field_range: Tuple[str, str], spec_types: np.ndarray, check_subclass: bool
 ) -> np.ndarray:
@@ -190,7 +190,7 @@ def sptype_to_index(
     return spt_discrete
 
 
-@typechecked
+@beartype
 def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     """
     Function for formatting the model parameters to use them
@@ -1103,7 +1103,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     return param
 
 
-@typechecked
+@beartype
 def quantity_unit(
     param: List[str], object_type: str
 ) -> Tuple[List[str], List[Optional[str]], List[str]]:
@@ -1390,7 +1390,7 @@ def quantity_unit(
     return quantity, unit, label
 
 
-@typechecked
+@beartype
 def field_bounds_ticks(
     field_range: Tuple[str, str],
     check_subclass: bool,
@@ -1581,7 +1581,7 @@ def field_bounds_ticks(
     return bounds, ticks, labels
 
 
-@typechecked
+@beartype
 def remove_color_duplicates(
     object_names: List[str], empirical_names: np.ndarray
 ) -> List[int]:
@@ -1631,7 +1631,7 @@ def remove_color_duplicates(
     return indices
 
 
-@typechecked
+@beartype
 def create_model_label(
     model_param: Dict[str, float],
     object_type: str,

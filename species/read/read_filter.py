@@ -6,12 +6,12 @@ import os
 import warnings
 
 from configparser import ConfigParser
-from typing import Optional, Tuple, Union
 
 import h5py
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional, Tuple, Union
 from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
 
 from species.data.filter_data.filter_data import add_filter_profile
@@ -23,7 +23,7 @@ class ReadFilter:
     Class for reading a filter profile from the database.
     """
 
-    @typechecked
+    @beartype
     def __init__(self, filter_name: str) -> None:
         """
         Parameters
@@ -66,7 +66,7 @@ class ReadFilter:
             with h5py.File(self.database, "a") as hdf5_file:
                 add_filter_profile(self.data_folder, hdf5_file, self.filter_name)
 
-    @typechecked
+    @beartype
     def get_filter(self) -> np.ndarray:
         """
         Select a filter profile from the database.
@@ -87,7 +87,7 @@ class ReadFilter:
 
         return data
 
-    @typechecked
+    @beartype
     def interpolate_filter(self) -> interp1d:
         """
         Interpolate a filter profile with the `interp1d <https://
@@ -111,7 +111,7 @@ class ReadFilter:
             fill_value=float("nan"),
         )
 
-    @typechecked
+    @beartype
     def wavelength_range(
         self,
     ) -> Tuple[Union[np.float32, np.float64], Union[np.float32, np.float64]]:
@@ -130,7 +130,7 @@ class ReadFilter:
 
         return data[0, 0], data[-1, 0]
 
-    @typechecked
+    @beartype
     def mean_wavelength(self) -> Union[np.float32, np.float64]:
         """
         Calculate the weighted mean wavelength of the filter profile.
@@ -147,7 +147,7 @@ class ReadFilter:
             data[:, 1], x=data[:, 0]
         )
 
-    @typechecked
+    @beartype
     def effective_wavelength(self) -> Union[np.float32, np.float64]:
         """
         Calculate the effective wavelength of the filter profile.
@@ -192,7 +192,7 @@ class ReadFilter:
             x=filter_profile[:, 0],
         ) / np.trapezoid(filter_profile[:, 1] * flux_filter, x=filter_profile[:, 0])
 
-    @typechecked
+    @beartype
     def filter_fwhm(self) -> Optional[float]:
         """
         Calculate the full width at half maximum (FWHM)
@@ -226,7 +226,7 @@ class ReadFilter:
 
         return filt_fwhm
 
-    @typechecked
+    @beartype
     def effective_width(self) -> Union[np.float32, np.float64]:
         """
         Calculate the effective width of the filter profile. The
@@ -244,7 +244,7 @@ class ReadFilter:
 
         return np.trapezoid(data[:, 1], x=data[:, 0]) / np.amax(data[:, 1])
 
-    @typechecked
+    @beartype
     def detector_type(self) -> str:
         """
         Return the detector type.

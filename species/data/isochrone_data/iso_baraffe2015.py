@@ -9,12 +9,12 @@ import h5py
 import numpy as np
 import pooch
 
-from typeguard import typechecked
+from beartype import beartype
 
 from species.core import constants
 
 
-@typechecked
+@beartype
 def add_baraffe2015(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the Baraffe et al. (2015)

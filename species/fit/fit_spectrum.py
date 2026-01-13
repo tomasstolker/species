@@ -8,21 +8,20 @@ simply fitting a scaling parameter.
 
 import math
 
-from typing import Dict, List, Optional, Tuple, Union
-
 from multiprocessing import cpu_count, Pool
 
 import emcee
 import numpy as np
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_calibration import ReadCalibration
 from species.read.read_object import ReadObject
 
 
-@typechecked
+@beartype
 def lnprob(
     param: np.ndarray,
     bounds: Dict[str, Tuple[float, float]],
@@ -91,7 +90,7 @@ class FitSpectrum:
     Class for fitting a calibration spectrum to photometric data.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         object_name: str,
@@ -153,7 +152,7 @@ class FitSpectrum:
 
         self.modelpar = ["scaling"]
 
-    @typechecked
+    @beartype
     def run_mcmc(
         self,
         nwalkers: int,

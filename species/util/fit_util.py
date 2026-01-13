@@ -6,13 +6,13 @@ import os
 import warnings
 
 from configparser import ConfigParser
-from typing import Dict, List, Optional, Union
 
 import h5py
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Union
 from spectres.spectral_resampling_numba import spectres_numba
-from typeguard import typechecked
 
 from species.core.box import ObjectBox, ResidualsBox, SynphotBox, create_box
 from species.phot.syn_phot import SyntheticPhotometry
@@ -26,7 +26,7 @@ from species.util.model_util import binary_to_single, powerlaw_spectrum
 from species.util.retrieval_util import convolve_spectrum
 
 
-@typechecked
+@beartype
 def multi_photometry(
     datatype: str,
     spectrum: str,
@@ -212,7 +212,7 @@ def multi_photometry(
     )
 
 
-@typechecked
+@beartype
 def get_residuals(
     parameters: Dict[str, float],
     objectbox: ObjectBox,

@@ -9,13 +9,13 @@ import h5py
 import numpy as np
 import pooch
 
-from typeguard import typechecked
+from beartype import beartype
 
 from species.core import constants
 from species.util.data_util import extract_tarfile
 
 
-@typechecked
+@beartype
 def add_sonora_bobcat(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the isochrone data of `Sonora Bobcat

@@ -8,12 +8,12 @@ import h5py
 import numpy as np
 import pooch
 
-from typeguard import typechecked
+from beartype import beartype
 
 from species.core import constants
 
 
-@typechecked
+@beartype
 def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the accretion relation from `Aoyama et al.

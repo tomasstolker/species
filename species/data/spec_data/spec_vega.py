@@ -10,10 +10,10 @@ import pooch
 import requests
 
 from astropy.io import fits
-from typeguard import typechecked
+from beartype import beartype
 
 
-@typechecked
+@beartype
 def add_vega(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding a flux-calibrated spectrum of Vega to the

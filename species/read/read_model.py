@@ -7,14 +7,14 @@ import warnings
 
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 
 import dust_extinction.parameter_averages as dust_ext
 import h5py
 import numpy as np
 
 from astropy import units as u
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from scipy.integrate import simpson
 from scipy.interpolate import RegularGridInterpolator
 from spectres.spectral_resampling_numba import spectres_numba
@@ -61,7 +61,7 @@ class ReadModel:
     reddening, :math:`R_V`.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         model: str,
@@ -158,7 +158,7 @@ class ReadModel:
         hdf5_file = self.open_database()
         hdf5_file.close()
 
-    @typechecked
+    @beartype
     def open_database(self) -> h5py._hl.files.File:
         """
         Internal function for opening the HDF5 database.
@@ -194,7 +194,7 @@ class ReadModel:
 
         return h5py.File(self.database, "r")
 
-    @typechecked
+    @beartype
     def wavelength_points(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Internal function for extracting the wavelength points and
@@ -238,7 +238,7 @@ class ReadModel:
 
         return wl_points[wl_index], wl_index
 
-    @typechecked
+    @beartype
     def interpolate_grid(
         self, teff_range: Optional[Tuple[float, float]] = None
     ) -> None:
@@ -317,7 +317,7 @@ class ReadModel:
             fill_value=np.nan,
         )
 
-    @typechecked
+    @beartype
     def apply_lognorm_ext(
         self,
         wavelength: np.ndarray,
@@ -378,7 +378,7 @@ class ReadModel:
 
         return flux * np.exp(-lognorm_ext * cross_sections)
 
-    @typechecked
+    @beartype
     def apply_powerlaw_ext(
         self,
         wavelength: np.ndarray,
@@ -438,7 +438,7 @@ class ReadModel:
         return flux * np.exp(-powerlaw_ext * cross_sections)
 
     @staticmethod
-    @typechecked
+    @beartype
     def apply_ext_ism(
         wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
     ) -> np.ndarray:
@@ -464,7 +464,7 @@ class ReadModel:
 
         return flux * 10.0 ** (-0.4 * ext_mag)
 
-    @typechecked
+    @beartype
     def get_model(
         self,
         model_param: Dict[str, float],
@@ -1007,7 +1007,7 @@ class ReadModel:
 
         return model_box
 
-    @typechecked
+    @beartype
     def get_data(
         self,
         model_param: Dict[str, float],
@@ -1472,7 +1472,7 @@ class ReadModel:
 
         return model_box
 
-    @typechecked
+    @beartype
     def get_flux(
         self, model_param: Dict[str, float], synphot=None, return_box: bool = False
     ) -> Union[Tuple[Optional[float], Optional[float]], PhotometryBox]:
@@ -1541,7 +1541,7 @@ class ReadModel:
 
         return model_flux
 
-    @typechecked
+    @beartype
     def get_magnitude(
         self,
         model_param: Dict[str, float],
@@ -1656,7 +1656,7 @@ class ReadModel:
 
         return app_mag[0], abs_mag[0]
 
-    @typechecked
+    @beartype
     def get_bounds(self) -> Dict[str, Tuple[float, float]]:
         """
         Function for extracting the grid boundaries.
@@ -1678,7 +1678,7 @@ class ReadModel:
 
         return bounds
 
-    @typechecked
+    @beartype
     def get_wavelengths(self) -> np.ndarray:
         """
         Function for extracting the wavelength points.
@@ -1694,7 +1694,7 @@ class ReadModel:
 
         return wavelength
 
-    @typechecked
+    @beartype
     def get_points(self) -> Dict[str, np.ndarray]:
         """
         Function for extracting the grid points.
@@ -1718,7 +1718,7 @@ class ReadModel:
 
         return points
 
-    @typechecked
+    @beartype
     def get_parameters(self) -> List[str]:
         """
         Function for extracting the parameter names.
@@ -1743,7 +1743,7 @@ class ReadModel:
 
         return param
 
-    @typechecked
+    @beartype
     def get_sampling(self) -> float:
         """
         Function for returning the wavelength sampling,
@@ -1763,7 +1763,7 @@ class ReadModel:
 
         return np.mean(wavel_sampling)
 
-    @typechecked
+    @beartype
     def binary_spectrum(
         self,
         model_param: Dict[str, float],
@@ -1858,7 +1858,7 @@ class ReadModel:
 
         return model_box
 
-    @typechecked
+    @beartype
     def integrate_spectrum(
         self, model_param: Dict[str, float]
     ) -> Tuple[float, Optional[float]]:
@@ -1942,7 +1942,7 @@ class ReadModel:
 
         return teff_int, log_lum
 
-    @typechecked
+    @beartype
     def create_color_magnitude(
         self,
         model_param: Dict[str, float],
@@ -2029,7 +2029,7 @@ class ReadModel:
             sptype=param_list,
         )
 
-    @typechecked
+    @beartype
     def create_color_color(
         self,
         model_param: Dict[str, float],

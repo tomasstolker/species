@@ -8,7 +8,6 @@ import warnings
 
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 import astropy.units as u
 import h5py
@@ -18,9 +17,10 @@ import pooch
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.units.quantity import Quantity
+from beartype import beartype
+from beartype.typing import Any, Dict, List, Optional, Tuple, Union
 from scipy.integrate import simpson
 from tqdm.auto import tqdm
-from typeguard import typechecked
 
 from species.core import constants
 from species.core.box import ObjectBox, ModelBox, SamplesBox, SpectrumBox, create_box
@@ -32,7 +32,7 @@ class Database:
     Class with reading and writing functionalities for the HDF5 database.
     """
 
-    @typechecked
+    @beartype
     def __init__(self) -> None:
         """
         Returns
@@ -52,7 +52,7 @@ class Database:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
-    @typechecked
+    @beartype
     def list_content(self) -> None:
         """
         Function for listing the content of the HDF5 database. The
@@ -68,7 +68,7 @@ class Database:
 
         print_section("List database content")
 
-        @typechecked
+        @beartype
         def _descend(
             h5_object: Union[
                 h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
@@ -123,7 +123,7 @@ class Database:
         with h5py.File(self.database, "r") as hdf_file:
             _descend(hdf_file)
 
-    @typechecked
+    @beartype
     def list_companions(self, verbose: bool = False) -> List[str]:
         """
         Function for printing an overview of the companion data that
@@ -201,7 +201,7 @@ class Database:
 
         return comp_names
 
-    @typechecked
+    @beartype
     def available_models(self, verbose: bool = True) -> Dict:
         """
         Function for printing an overview of the available model grids
@@ -269,7 +269,7 @@ class Database:
 
         return model_data
 
-    @typechecked
+    @beartype
     def delete_data(self, data_set: str) -> None:
         """
         Function for deleting a dataset from the HDF5 database.
@@ -302,7 +302,7 @@ class Database:
                     f"The dataset {data_set} is not found in {self.database}."
                 )
 
-    @typechecked
+    @beartype
     def add_companion(
         self,
         name: Optional[Union[Optional[str], Optional[List[str]]]] = None,
@@ -404,7 +404,7 @@ class Database:
                 verbose=verbose,
             )
 
-    @typechecked
+    @beartype
     def add_dust(self) -> None:
         """
         Function for adding optical constants of MgSiO3 and Fe, and
@@ -444,7 +444,7 @@ class Database:
             add_optical_constants(self.data_folder, hdf5_file)
             add_cross_sections(self.data_folder, hdf5_file)
 
-    @typechecked
+    @beartype
     def add_accretion(self) -> None:
         """
         Function for adding the coefficients for converting line
@@ -471,7 +471,7 @@ class Database:
 
             add_accretion_relation(self.data_folder, hdf5_file)
 
-    @typechecked
+    @beartype
     def add_filter(
         self,
         filter_name: str,
@@ -553,7 +553,7 @@ class Database:
         if verbose:
             print(" [DONE]")
 
-    @typechecked
+    @beartype
     def add_isochrones(
         self,
         model: Optional[str] = None,
@@ -733,7 +733,7 @@ class Database:
                 self.data_folder, hdf5_file, model, filename=filename, tag=tag
             )
 
-    @typechecked
+    @beartype
     def add_model(
         self,
         model: str,
@@ -839,7 +839,7 @@ class Database:
                 extend_from=extend_from,
             )
 
-    @typechecked
+    @beartype
     def add_custom_model(
         self,
         model: str,
@@ -924,7 +924,7 @@ class Database:
                 wavel_sampling,
             )
 
-    @typechecked
+    @beartype
     def add_object(
         self,
         object_name: str,
@@ -1730,7 +1730,7 @@ class Database:
 
         hdf5_file.close()
 
-    @typechecked
+    @beartype
     def add_simple_object(
         self,
         object_name: str,
@@ -2021,7 +2021,7 @@ class Database:
             verbose=False,
         )
 
-    @typechecked
+    @beartype
     def add_photometry(self, phot_library: str) -> None:
         """
         Function for adding a photometry library to the database.
@@ -2060,7 +2060,7 @@ class Database:
 
                 add_jwst_ydwarfs(self.data_folder, hdf5_file)
 
-    @typechecked
+    @beartype
     def add_calibration(
         self,
         tag: str,
@@ -2217,7 +2217,7 @@ class Database:
 
         print(" [DONE]")
 
-    @typechecked
+    @beartype
     def add_spectra(
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
@@ -2256,7 +2256,7 @@ class Database:
 
             add_spec_library(self.data_folder, hdf5_file, spec_library, sptypes)
 
-    @typechecked
+    @beartype
     def add_samples(
         self,
         tag: str,
@@ -2383,7 +2383,7 @@ class Database:
             for key, value in attr_dict.items():
                 dset.attrs[key] = value
 
-    @typechecked
+    @beartype
     def get_probable_sample(
         self,
         tag: str,
@@ -2474,7 +2474,7 @@ class Database:
 
         return prob_sample
 
-    @typechecked
+    @beartype
     def get_median_sample(
         self,
         tag: str,
@@ -2559,7 +2559,7 @@ class Database:
 
         return median_sample
 
-    @typechecked
+    @beartype
     def get_compare_sample(self, tag: str, verbose: bool = True) -> Dict[str, float]:
         """
         Function for extracting the sample parameters for which
@@ -2626,7 +2626,7 @@ class Database:
 
         return model_param
 
-    @typechecked
+    @beartype
     def get_mcmc_spectra(
         self,
         tag: str,
@@ -2904,7 +2904,7 @@ class Database:
         else:
             return boxes
 
-    @typechecked
+    @beartype
     def get_mcmc_photometry(
         self,
         tag: str,
@@ -3121,7 +3121,7 @@ class Database:
 
         return mcmc_phot
 
-    @typechecked
+    @beartype
     def get_object(
         self,
         object_name: str,
@@ -3257,7 +3257,7 @@ class Database:
             distance=distance,
         )
 
-    @typechecked
+    @beartype
     def get_samples(
         self,
         tag: str,
@@ -3436,7 +3436,7 @@ class Database:
             normal_priors=normal_priors,
         )
 
-    @typechecked
+    @beartype
     def get_evidence(self, tag: str) -> Tuple[float, float]:
         """
         Function for returning the log-evidence (i.e.
@@ -3468,7 +3468,7 @@ class Database:
 
         return ln_evidence[0], ln_evidence[1]
 
-    @typechecked
+    @beartype
     def get_pt_profiles(
         self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -3630,7 +3630,7 @@ class Database:
 
         return press, temp
 
-    @typechecked
+    @beartype
     def add_empirical(
         self,
         tag: str,
@@ -3723,7 +3723,7 @@ class Database:
                 f"results/empirical/{tag}/rad_vel", data=rad_vel, dtype="f8"
             )
 
-    @typechecked
+    @beartype
     def add_comparison(
         self,
         tag: str,
@@ -4336,7 +4336,7 @@ class Database:
                 dset.attrs[f"parameter{n_param-1}"] = "teff"
 
     @staticmethod
-    @typechecked
+    @beartype
     def get_retrieval_spectra(
         tag: str,
         random: Optional[int],
@@ -4654,7 +4654,7 @@ class Database:
 
         return boxes, read_rad
 
-    @typechecked
+    @beartype
     def get_retrieval_teff(
         self,
         tag: str,
@@ -4772,7 +4772,7 @@ class Database:
 
         return t_eff, l_bol
 
-    @typechecked
+    @beartype
     def petitcode_param(
         self, tag: str, sample_type: str = "median", json_file: Optional[str] = None
     ) -> Dict[str, float]:
@@ -5035,7 +5035,7 @@ class Database:
 
         return pcode_param
 
-    @typechecked
+    @beartype
     def get_spectral_type(self, tag: str, verbose: bool = True) -> SpectrumBox:
         """
         Function for extracting the spectral template for which the

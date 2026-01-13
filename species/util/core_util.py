@@ -2,10 +2,10 @@
 Module with utility functions for the ``species`` core.
 """
 
-from typeguard import typechecked
+from beartype import beartype
 
 
-@typechecked
+@beartype
 def print_section(
     sect_title: str,
     bound_char: str = "-",

@@ -14,7 +14,6 @@ import time
 import warnings
 
 # from math import isclose
-from typing import Dict, List, Optional, Tuple, Union
 
 import dynesty
 import matplotlib.pyplot as plt
@@ -30,12 +29,13 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from molmass import Formula
 from schwimmbad import MPIPool
 from scipy.integrate import simpson
 from scipy.interpolate import interp1d
 from scipy.stats import invgamma, norm
-from typeguard import typechecked
 
 from species.core import constants
 from species.phot.syn_phot import SyntheticPhotometry
@@ -73,7 +73,7 @@ class AtmosphericRetrieval:
     implementation of ``PyMultiNest`` or ``Dynesty``.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         object_name: str,
@@ -456,7 +456,7 @@ class AtmosphericRetrieval:
 
             print(f"   - {item} = {self.weights[item]:.2e}")
 
-    @typechecked
+    @beartype
     def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
         """
         Function for downsampling the ``c-k`` opacities from
@@ -533,7 +533,7 @@ class AtmosphericRetrieval:
             spec_res, path=out_folder, species=self.line_species, masses=mol_masses
         )
 
-    @typechecked
+    @beartype
     def _set_parameters(
         self,
         bounds: dict,
@@ -767,7 +767,7 @@ class AtmosphericRetrieval:
         for item in self.parameters:
             print(f"   - {item}")
 
-    @typechecked
+    @beartype
     def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[float, float]], cube_index: Dict[str, int]
     ):
@@ -1685,7 +1685,7 @@ class AtmosphericRetrieval:
 
         return cube
 
-    @typechecked
+    @beartype
     def _lnlike(
         self,
         cube,
@@ -2978,7 +2978,7 @@ class AtmosphericRetrieval:
 
         return ln_prior + ln_like
 
-    @typechecked
+    @beartype
     def setup_retrieval(
         self,
         bounds: dict,
@@ -3688,7 +3688,7 @@ class AtmosphericRetrieval:
             self.eq_chem = PreCalculatedEquilibriumChemistryTable()
             self.eq_chem.load()
 
-    @typechecked
+    @beartype
     def run_multinest(
         self,
         n_live_points: int = 1000,
@@ -3825,7 +3825,7 @@ class AtmosphericRetrieval:
                 global_fsed=global_fsed,
             )
 
-        @typechecked
+        @beartype
         def _lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
             """
             Function to transform the unit cube into the parameter
@@ -3849,7 +3849,7 @@ class AtmosphericRetrieval:
 
             self._prior_transform(cube, self.bounds, self.cube_index)
 
-        @typechecked
+        @beartype
         def _lnlike_multinest(
             params, n_dim: int, n_param: int
         ) -> Union[float, np.float64]:
@@ -3895,7 +3895,7 @@ class AtmosphericRetrieval:
             evidence_tolerance=evidence_tolerance,
         )
 
-    @typechecked
+    @beartype
     def run_dynesty(
         self,
         n_live_points: int = 2000,

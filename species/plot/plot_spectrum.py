@@ -5,13 +5,12 @@ that includes photometric and/or spectral data and/or models.
 
 import math
 
-from typing import Dict, List, Optional, Tuple, Union
-
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from matplotlib.ticker import AutoMinorLocator
 
 from species.core.box import (
@@ -28,7 +27,7 @@ from species.util.data_util import convert_units
 from species.util.plot_util import create_model_label, create_param_format
 
 
-@typechecked
+@beartype
 def plot_spectrum(
     boxes: list,
     filters: Optional[List[str]] = None,

@@ -6,8 +6,6 @@ import configparser
 import os
 import warnings
 
-from typing import Dict, List, Optional, Tuple, Union
-
 import h5py
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -25,10 +23,11 @@ from astropy import units as u
 from astropy.modeling.fitting import LinearLSQFitter
 from astropy.modeling.polynomial import Polynomial1D
 from astropy.nddata import StdDevUncertainty
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
 from specutils import Spectrum1D
 from specutils.fitting import fit_generic_continuum
-from typeguard import typechecked
 
 from species.core import constants
 from species.read.read_object import ReadObject
@@ -41,7 +40,7 @@ class EmissionLine:
     Class for the analysis of emission lines.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         object_name: str,
@@ -172,7 +171,7 @@ class EmissionLine:
         self.continuum_flux = np.full(self.spectrum.shape[0], 0.0)
         self.continuum_check = False
 
-    @typechecked
+    @beartype
     def list_hydrogen_lines(self) -> List[str]:
         """
         Function to list the hydrogen lines for which an accretion
@@ -206,7 +205,7 @@ class EmissionLine:
 
         return line_names
 
-    @typechecked
+    @beartype
     def subtract_continuum(
         self,
         poly_degree: int = 3,
@@ -470,7 +469,7 @@ class EmissionLine:
             np.savetxt(spec_filename, self.spectrum, header=header)
             print(" [DONE]")
 
-    @typechecked
+    @beartype
     def integrate_flux(
         self,
         wavel_int: Tuple[float, float],
@@ -769,7 +768,7 @@ class EmissionLine:
 
         return line_flux, line_error
 
-    @typechecked
+    @beartype
     def fit_gaussian(
         self,
         tag: str,
@@ -822,7 +821,7 @@ class EmissionLine:
 
         high_spec_res = 1e5
 
-        @typechecked
+        @beartype
         def gaussian_function(
             amplitude: float, mean: float, sigma: float, wavel: np.ndarray
         ):
@@ -885,7 +884,7 @@ class EmissionLine:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        @typechecked
+        @beartype
         def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
             """
             Function for transforming the unit cube
@@ -913,7 +912,7 @@ class EmissionLine:
 
             return params
 
-        @typechecked
+        @beartype
         def lnlike_ultranest(params: np.ndarray) -> np.float64:
             """
             Function for calculating the log-likelihood for the
@@ -1400,7 +1399,7 @@ class EmissionLine:
         plt.clf()
         plt.close()
 
-    @typechecked
+    @beartype
     def accretion_luminosity(
         self,
         line_lum: Union[float, np.ndarray],

@@ -13,12 +13,12 @@ import numpy as np
 import pooch
 
 from astropy.io import fits
-from typeguard import typechecked
+from beartype import beartype
 
 from species.core import constants
 
 
-@typechecked
+@beartype
 def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the `Marleau & Cumming (2014)

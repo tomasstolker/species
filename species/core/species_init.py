@@ -9,11 +9,11 @@ import urllib.request
 from configparser import ConfigParser
 from os import environ
 from pathlib import Path, PosixPath, WindowsPath
-from typing import Optional, Union
 
 import h5py
 
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional, Union
 
 from .._version import __version__, __version_tuple__
 
@@ -25,7 +25,7 @@ class SpeciesInit:
     folder, and creating the data folder for storage of input data.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         config_file: Optional[Union[str, PosixPath, WindowsPath]] = None,

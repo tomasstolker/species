@@ -3,7 +3,6 @@ Module for adding the IRTF Spectral Library to the database.
 """
 
 from pathlib import Path
-from typing import Optional, List
 
 import h5py
 import numpy as np
@@ -11,13 +10,14 @@ import pandas as pd
 import pooch
 
 from astropy.io import fits
-from typeguard import typechecked
+from beartype import beartype
+from beartype.typing import Optional, List
 
 from species.util.data_util import extract_tarfile, update_sptype
 from species.util.query_util import get_parallax, get_simbad
 
 
-@typechecked
+@beartype
 def add_irtf(
     input_path: str, database: h5py._hl.files.File, sptypes: Optional[List[str]] = None
 ) -> None:

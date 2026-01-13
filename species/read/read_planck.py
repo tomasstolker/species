@@ -6,12 +6,12 @@ import os
 import warnings
 
 from configparser import ConfigParser
-from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from spectres.spectral_resampling_numba import spectres_numba
-from typeguard import typechecked
 
 from species.core import constants
 from species.core.box import ColorMagBox, ColorColorBox, ModelBox, create_box
@@ -26,7 +26,7 @@ class ReadPlanck:
     Class for reading a Planck spectrum.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         wavel_range: Optional[
@@ -76,7 +76,7 @@ class ReadPlanck:
         self.database = config["species"]["database"]
 
     @staticmethod
-    @typechecked
+    @beartype
     def planck(
         wavel_points: np.ndarray, temperature: float, scaling: float
     ) -> np.ndarray:
@@ -114,7 +114,7 @@ class ReadPlanck:
         return 1e-6 * np.pi * scaling * planck_1 / planck_2  # (W m-2 um-1)
 
     @staticmethod
-    @typechecked
+    @beartype
     def update_parameters(
         model_param: Dict[str, Union[float, List[float]]],
     ) -> Dict[str, float]:
@@ -152,7 +152,7 @@ class ReadPlanck:
         return updated_param
 
     @staticmethod
-    @typechecked
+    @beartype
     def apply_ext_ism(
         wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
     ) -> np.ndarray:
@@ -178,7 +178,7 @@ class ReadPlanck:
 
         return flux * 10.0 ** (-0.4 * ext_mag)
 
-    @typechecked
+    @beartype
     def get_spectrum(
         self,
         model_param: Dict[str, Union[float, List[float]]],
@@ -361,7 +361,7 @@ class ReadPlanck:
 
         return model_box
 
-    @typechecked
+    @beartype
     def get_flux(
         self, model_param: Dict[str, Union[float, List[float]]], synphot=None
     ) -> Tuple[float, None]:
@@ -396,7 +396,7 @@ class ReadPlanck:
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
-    @typechecked
+    @beartype
     def get_magnitude(
         self, model_param: Dict[str, Union[float, List[float]]], synphot=None
     ) -> Tuple[Tuple[float, None], Tuple[float, None]]:
@@ -438,7 +438,7 @@ class ReadPlanck:
         )
 
     @staticmethod
-    @typechecked
+    @beartype
     def get_color_magnitude(
         temperatures: np.ndarray,
         radius: float,
@@ -496,7 +496,7 @@ class ReadPlanck:
         )
 
     @staticmethod
-    @typechecked
+    @beartype
     def get_color_color(
         temperatures: np.ndarray,
         radius: float,

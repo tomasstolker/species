@@ -9,13 +9,12 @@ import configparser
 import os
 import warnings
 
-from typing import List, Optional, Tuple, Union
-
 import h5py
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import List, Optional, Tuple, Union
 from scipy.interpolate import interp1d
-from typeguard import typechecked
 
 from species.core import constants
 from species.data.spec_data.add_spec_data import add_spec_library
@@ -33,7 +32,7 @@ class CompareSpectra:
     library of empirical spectra or a grid of model spectra.
     """
 
-    @typechecked
+    @beartype
     def __init__(
         self,
         object_name: str,
@@ -83,7 +82,7 @@ class CompareSpectra:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
-    @typechecked
+    @beartype
     def spectral_type(
         self,
         tag: str,
@@ -401,7 +400,7 @@ class CompareSpectra:
 
         return best_list
 
-    @typechecked
+    @beartype
     def compare_model(
         self,
         tag: str,

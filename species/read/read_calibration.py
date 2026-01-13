@@ -5,14 +5,13 @@ Module with reading functionalities for calibration spectra.
 import configparser
 import os
 
-from typing import Dict, Optional, Tuple
-
 import h5py
 import numpy as np
 
+from beartype import beartype
+from beartype.typing import Dict, Optional, Tuple
 from scipy.optimize import curve_fit
 from spectres.spectral_resampling_numba import spectres_numba
-from typeguard import typechecked
 
 from species.core.box import SpectrumBox, create_box
 from species.phot.syn_phot import SyntheticPhotometry
@@ -25,7 +24,7 @@ class ReadCalibration:
     Class for reading a calibration spectrum from the database.
     """
 
-    @typechecked
+    @beartype
     def __init__(self, tag: str, filter_name: Optional[str] = None) -> None:
         """
         Parameters
@@ -62,7 +61,7 @@ class ReadCalibration:
 
         self.database = config["species"]["database"]
 
-    @typechecked
+    @beartype
     def resample_spectrum(
         self,
         wavel_points: np.ndarray,
@@ -170,7 +169,7 @@ class ReadCalibration:
             name=self.tag,
         )
 
-    @typechecked
+    @beartype
     def get_spectrum(
         self,
         model_param: Optional[Dict[str, float]] = None,
@@ -308,7 +307,7 @@ class ReadCalibration:
             name=self.tag,
         )
 
-    @typechecked
+    @beartype
     def get_flux(
         self, model_param: Optional[Dict[str, float]] = None
     ) -> Tuple[float, float]:
@@ -340,7 +339,7 @@ class ReadCalibration:
             specbox.wavelength, specbox.flux, error=specbox.flux
         )
 
-    @typechecked
+    @beartype
     def get_magnitude(
         self,
         model_param: Optional[Dict[str, float]] = None,
