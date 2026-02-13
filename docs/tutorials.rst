@@ -3,9 +3,7 @@
 Tutorials
 =========
 
-Below is a set of tutorials highlighting key functionalities of the toolkit.
-All tutorials can be downloaded as `Jupyter notebooks <https://github.com/tomasstolker/species/tree/main/docs/tutorials>`_.
-Please `create an issue <https://github.com/tomasstolker/species/issues>`_ if you encounter any problems or unexpected behavior.
+Below is a set of tutorials highlighting key functionalities of the toolkit. All tutorials can be downloaded as `Jupyter notebooks <https://github.com/tomasstolker/species/tree/main/docs/tutorials>`_. Please `create an issue <https://github.com/tomasstolker/species/issues>`_ if you encounter any problems or unexpected behavior.
 
 .. tip::
    Detailed descriptions of all classes, functions, and parameters are available in the

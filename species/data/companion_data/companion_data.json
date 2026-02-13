@@ -2907,6 +2907,52 @@
             "Matthews et al. 2024"
         ]
     },
+    "WISPIT 2 b": {
+        "simbad": "IRAS 19205-0746",
+        "gaia_dr3": 4207586980945067648,
+        "parallax": [
+            7.4649,
+            0.0214
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_H": [
+                [
+                    18.42,
+                    0.35
+                ],
+                [
+                    19.12,
+                    0.5
+                ]
+            ],
+            "Paranal/SPHERE.IRDIS_B_Ks": [
+                17.57,
+                0.09
+            ]
+        },
+        "semi_major": [
+            57.3,
+            -3.3,
+            8.3
+        ],
+        "mass_star": [
+            1.08,
+            0.17
+        ],
+        "mass_companion": [
+            4.85,
+            0.9
+        ],
+        "accretion": true,
+        "age": [
+            5.1,
+            -1.3,
+            2.4
+        ],
+        "references": [
+            "Van Capelleveen et al. 2025"
+        ]
+    },
     "VHS 1256 B": {
         "simbad": "SIPS J1256-1257",
         "gaia_dr3": 3526198184723289472,

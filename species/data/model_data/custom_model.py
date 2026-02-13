@@ -84,6 +84,20 @@ def add_custom_model_grid(
         benefit of using this parameter is limiting the storage
         in the HDF5 database. The parameter should be used in
         combination with setting the ``wavel_range``.
+    fit_from : float, None
+        Extend the spectra with a Rayleigh-Jeans slope. To do so, the
+        red end of the spectra will be fitted by setting ``fit_from``
+        to the minimum wavelength (in um) beyond which fluxes will be
+        included in the least-squares fit. The spectra are not
+        extended when setting the argument to ``None``.
+    extend_from : float, None
+        This parameter can be used in combination with ``fit_from``.
+        The argument of ``extend_from`` is the minimum wavelength
+        (in um) from which the spectra will be extended with the
+        Rayleigh-Jeans slope. The spectra will be extended from the
+        last available wavelength when setting the argument to
+        ``None``. Typically, the value of ``fit_from`` will be
+        smaller than the value of ``extend_from``.
 
     Returns
     -------

@@ -408,6 +408,18 @@
         "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L",
         "checksum": "1c2da2ab9f80265ece353f987e0c02fcc81c9034d1ca8fb94194640544b0bf8e"
     },
+    "phoenix-hauschildt2025": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "PHOENIX NewEra",
+        "file size": "1.7 GB",
+        "wavelength range": [0.09, 30],
+        "lambda/d_lambda": 20000,
+        "teff range": [2300, 12000],
+        "reference": "Hauschildt et al. (2025)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2025A%26A...698A..47H/abstract",
+        "information": "[alpha/Fe] = 0.0",
+        "checksum": "69b31ba61d5a9c6b1be641a418fbe92a819b6eefc0928eea90603c5c6525bad4"
+    },
     "phoenix-husser2013": {
         "parameters": ["teff", "logg", "feh"],
         "name": "PHOENIX (Husser et al. 2013)",

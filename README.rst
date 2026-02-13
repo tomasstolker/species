@@ -11,7 +11,7 @@
 
 There are tools available for inference of atmospheric and evolutionary parameters, synthetic photometry, interpolation of model grids, color-magnitude and color-color diagrams, empirical spectral analysis, flux calibration, emission line analysis, and more.
 
-The package is available on PyPI <https://pypi.org/project/species/>_ and is developed and maintained on GitHub <https://github.com/tomasstolker/species>_.
+The package is available on `PyPI <https://pypi.org/project/species/>`_ and is developed and maintained on `GitHub <https://github.com/tomasstolker/species>`_.
 
 Documentation
 -------------
