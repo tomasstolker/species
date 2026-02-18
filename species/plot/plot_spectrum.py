@@ -565,6 +565,17 @@ def plot_spectrum(
             wavelength = box_item.wavelength
             flux = box_item.flux
 
+            if hasattr(box_item, "units"):
+                if box_item.units[0] != "um" or box_item.units[1] != "W m-2 um-1":
+                    raise ValueError(
+                        f"The units of the ModelBox {box_item} are "
+                        f"{box_item.units} while um and W m-2 um-1 "
+                        "are required. Please make sure to provide "
+                        "a ModelBox of which the units have not been "
+                        "adjusted. Instead, use the 'units' "
+                        "parameter of the 'plot_spectrum' function."
+                    )
+
             if isinstance(wavelength[0], (np.float32, np.float64)):
                 data_in = np.column_stack([wavelength, flux])
                 data_out = convert_units(data_in, units, convert_from=False)

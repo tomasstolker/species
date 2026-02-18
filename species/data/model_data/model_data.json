@@ -416,7 +416,7 @@
         "lambda/d_lambda": 20000,
         "teff range": [2300, 12000],
         "reference": "Hauschildt et al. (2025)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2025A%26A...698A..47H/abstract",
+        "url": "https://ui.adsabs.harvard.edu/abs/2025A%26A...698A..47H",
         "information": "[alpha/Fe] = 0.0",
         "checksum": "69b31ba61d5a9c6b1be641a418fbe92a819b6eefc0928eea90603c5c6525bad4"
     },

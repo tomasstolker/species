@@ -261,7 +261,8 @@ def plot_cooling(
                     raise ValueError(
                         f"The selected parameter, '{cooling_param}', "
                         f"is not part of the '{model_name}' "
-                        "evolutionary model grid.")
+                        "evolutionary model grid."
+                    )
 
                 ax[planet_idx].plot(
                     cool_tracks[planet_idx][-1][0],

@@ -2,13 +2,17 @@
 Module with the  ``Box`` classes and ``create_box`` function.
 """
 
+import warnings
+
 import numpy as np
 
 from beartype import beartype
-from beartype.typing import List, Union
+from beartype.typing import List, Tuple, Union
+from scipy.signal import savgol_filter
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
+from species.util.data_util import convert_units
 from species.util.spec_util import smooth_spectrum
 
 
@@ -199,6 +203,7 @@ class ModelBox(Box):
         self.bol_flux = None
         self.spec_res = None
         self.extra_out = None
+        self.units = ("um", "W m-2 um-1")
 
     def smooth_spectrum(self, spec_res: float) -> None:
         """
@@ -306,6 +311,76 @@ class ModelBox(Box):
         )
 
         return phot_box
+
+    def highpass_filter(self, window_length: int = 101) -> None:
+        """
+        Method for high-pass filtering of the model spectrum that
+        is stored in the ``ModelBox``. This is useful for removing
+        the pseudo-continuum of a high-resolution spectrum.
+        A `Savitzky-Golay filter <https://docs.scipy.org/doc/scipy/
+        reference/generated/scipy.signal.savgol_filter.html>`_
+        is used with a second order polynomial.
+
+        Parameters
+        ----------
+        window_length : int
+            Window length of the Savitsky-Golay filter. The
+            argument needs to be optimized, depending on the
+            sampling resolution of the model spectrum
+            (default: 101).
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        nan_mask = np.isnan(self.flux)
+
+        if np.sum(nan_mask) > 0:
+            warnings.warn(f"There are {np.sum(nan_mask)} NaNs in the model spectrum.")
+
+        filtered = self.flux.copy()
+
+        filtered[~nan_mask] = np.array(
+            savgol_filter(
+                self.flux[~nan_mask], window_length=window_length, polyorder=2
+            )
+        )
+
+        self.flux -= filtered[~nan_mask]
+
+    def convert_units(self, units: Tuple[str, str]) -> None:
+        """
+        Method for converting the wavelength and/or flux density
+        units from :math:`\\mu\\text{m}` and
+        :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`,
+        respectively, to any of the units listed with
+        the ``units`` parameter.
+
+        Parameters
+        ----------
+        units : tuple(str, str)
+            Tuple with the units of the wavelength ("um", "angstrom",
+            "nm", "mm", "cm", "m", "Hz", "GHz") and the units of the
+            flux density ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1",
+            "erg s-1 cm-2 angstrom-1" "erg s-1 cm-2 Hz-1", "uJy",
+            mJy", "Jy", "MJy"). One can use "um" or "µm"
+            interchangeably, and similarly "AA", "Å", "A", or
+            "angstrom".
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        spec_in = np.column_stack([self.wavelength, self.flux])
+        spec_out = convert_units(spec_in, units, convert_from=False)
+
+        self.wavelength = spec_out[:, 0]
+        self.flux = spec_out[:, 1]
+        self.units = (units[0], units[1])
 
 
 class ObjectBox(Box):
