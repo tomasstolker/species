@@ -7,6 +7,7 @@ import os
 import warnings
 
 from configparser import ConfigParser
+from numbers import Real
 from pathlib import Path
 
 import astropy.units as u
@@ -737,12 +738,12 @@ class Database:
     def add_model(
         self,
         model: str,
-        wavel_range: Optional[Tuple[float, float]] = None,
-        wavel_sampling: Optional[float] = None,
-        teff_range: Optional[Tuple[float, float]] = None,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
+        wavel_sampling: Optional[Real] = None,
+        teff_range: Optional[Tuple[Real, Real]] = None,
         unpack_tar: bool = True,
-        fit_from: Optional[float] = None,
-        extend_from: Optional[float] = None,
+        fit_from: Optional[Real] = None,
+        extend_from: Optional[Real] = None,
     ) -> None:
         """
         Function for adding a grid of model spectra to the database.
@@ -845,9 +846,9 @@ class Database:
         model: str,
         data_path: Union[str, Path],
         parameters: List[str],
-        wavel_range: Optional[Tuple[float, float]] = None,
-        wavel_sampling: Optional[float] = None,
-        teff_range: Optional[Tuple[float, float]] = None,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
+        wavel_sampling: Optional[Real] = None,
+        teff_range: Optional[Tuple[Real, Real]] = None,
     ) -> None:
         """
         Function for adding a custom grid of model spectra to the
@@ -928,22 +929,22 @@ class Database:
     def add_object(
         self,
         object_name: str,
-        parallax: Optional[Tuple[float, float]] = None,
+        parallax: Optional[Tuple[Real, Real]] = None,
         app_mag: Optional[
-            Dict[str, Union[Tuple[float, float], List[Tuple[float, float]]]]
+            Dict[str, Union[Tuple[Real, Real], List[Tuple[Real, Real]]]]
         ] = None,
-        flux_density: Optional[Dict[str, Tuple[float, float]]] = None,
+        flux_density: Optional[Dict[str, Tuple[Real, Real]]] = None,
         spectrum: Optional[
             Dict[
                 str,
                 Tuple[
                     Union[str, np.ndarray],
                     Optional[Union[str, np.ndarray]],
-                    Optional[float],
+                    Optional[Real],
                 ],
             ]
         ] = None,
-        deredden: Optional[Union[Dict[str, float], float]] = None,
+        deredden: Optional[Union[Dict[str, Real], Real]] = None,
         verbose: bool = True,
         units: Optional[Dict[str, Union[str, Tuple[str, str]]]] = None,
     ) -> None:
@@ -2067,7 +2068,7 @@ class Database:
         filename: Optional[str] = None,
         data: Optional[np.ndarray] = None,
         units: Optional[Dict[str, str]] = None,
-        scaling: Optional[Tuple[float, float]] = None,
+        scaling: Optional[Tuple[Real, Real]] = None,
     ) -> None:
         """
         Function for adding a calibration spectrum to the database.
@@ -2264,9 +2265,9 @@ class Database:
         samples: np.ndarray,
         ln_prob: np.ndarray,
         modelpar: List[str],
-        bounds: Dict[str, Tuple[float, float]],
-        normal_prior: Dict[str, Tuple[float, float]],
-        fixed_param: Dict[str, float],
+        bounds: Dict[str, Tuple[Real, Real]],
+        normal_prior: Dict[str, Tuple[Real, Real]],
+        fixed_param: Dict[str, Real],
         spec_labels: Optional[List[str]] = None,
         attr_dict: Optional[Dict] = None,
     ):
@@ -2631,8 +2632,8 @@ class Database:
         self,
         tag: str,
         random: Optional[int] = None,
-        wavel_range: Optional[Union[Tuple[float, float], str]] = None,
-        spec_res: Optional[float] = None,
+        wavel_range: Optional[Union[Tuple[Real, Real], str]] = None,
+        spec_res: Optional[Real] = None,
         wavel_resample: Optional[np.ndarray] = None,
     ) -> Union[
         Union[List[ModelBox], List[SpectrumBox]],
@@ -4658,7 +4659,7 @@ class Database:
     def get_retrieval_teff(
         self,
         tag: str,
-        wavel_range: Tuple[float, float],
+        wavel_range: Tuple[Real, Real],
         random: int = 100,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """

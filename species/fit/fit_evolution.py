@@ -9,6 +9,8 @@ import os
 import sys
 import warnings
 
+from numbers import Real
+
 import h5py
 import numpy as np
 
@@ -35,21 +37,21 @@ class FitEvolution:
     def __init__(
         self,
         evolution_model: str,
-        log_lum: Optional[Union[Tuple[float, float], List[Tuple[float, float]]]],
-        age_prior: Optional[Tuple[float, float, float]] = None,
+        log_lum: Optional[Union[Tuple[Real, Real], List[Tuple[Real, Real]]]],
+        age_prior: Optional[Tuple[Real, Real, Real]] = None,
         mass_prior: Optional[
-            Union[Tuple[float, float], List[Optional[Tuple[float, float]]]]
+            Union[Tuple[Real, Real], List[Optional[Tuple[Real, Real]]]]
         ] = None,
         radius_prior: Optional[
-            Union[Tuple[float, float], List[Optional[Tuple[float, float]]]]
+            Union[Tuple[Real, Real], List[Optional[Tuple[Real, Real]]]]
         ] = None,
         bounds: Optional[
             Dict[
                 str,
                 Union[
-                    Tuple[float, float],
-                    Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
-                    List[Tuple[float, float]],
+                    Tuple[Real, Real],
+                    Tuple[Optional[Tuple[Real, Real]], Optional[Tuple[Real, Real]]],
+                    List[Tuple[Real, Real]],
                 ],
             ]
         ] = None,

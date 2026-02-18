@@ -6,6 +6,8 @@ import os
 import sys
 import warnings
 
+from numbers import Real
+
 import dynesty
 import numpy as np
 
@@ -80,25 +82,25 @@ class FitModel:
             Dict[
                 str,
                 Union[
-                    Optional[Tuple[Optional[float], Optional[float]]],
+                    Optional[Tuple[Optional[Real], Optional[Real]]],
                     Tuple[
-                        Optional[Tuple[Optional[float], Optional[float]]],
-                        Optional[Tuple[Optional[float], Optional[float]]],
+                        Optional[Tuple[Optional[Real], Optional[Real]]],
+                        Optional[Tuple[Optional[Real], Optional[Real]]],
                     ],
                     Tuple[
-                        Optional[Tuple[float, float]],
-                        Optional[Tuple[float, float]],
-                        Optional[Tuple[float, float]],
+                        Optional[Tuple[Real, Real]],
+                        Optional[Tuple[Real, Real]],
+                        Optional[Tuple[Real, Real]],
                     ],
-                    List[Tuple[float, float]],
+                    List[Tuple[Real, Real]],
                 ],
             ]
         ] = None,
         inc_phot: Union[bool, List[str]] = True,
         inc_spec: Union[bool, List[str]] = True,
         fit_corr: Optional[List[str]] = None,
-        apply_weights: Union[bool, Dict[str, Union[float, np.ndarray]]] = False,
-        normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
+        apply_weights: Union[bool, Dict[str, Union[Real, np.ndarray]]] = False,
+        normal_prior: Optional[Dict[str, Tuple[Real, Real]]] = None,
         ext_model: Optional[str] = None,
         binary_prior: bool = False,
     ) -> None:
@@ -3155,7 +3157,7 @@ class FitModel:
         n_live_points: int = 1000,
         resume: bool = False,
         output: str = "dynesty/",
-        evidence_tolerance: float = 0.5,
+        evidence_tolerance: Real = 0.5,
         dynamic: bool = False,
         sample_method: str = "auto",
         bound: str = "multi",
