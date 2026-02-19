@@ -24,6 +24,7 @@ Documentation for *species*
    data
    tutorials
    modules
+   faq
 
 .. toctree::
    :maxdepth: 1
