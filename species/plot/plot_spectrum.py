@@ -4,6 +4,7 @@ that includes photometric and/or spectral data and/or models.
 """
 
 import math
+from numbers import Real
 
 import numpy as np
 import matplotlib as mpl
@@ -34,30 +35,30 @@ def plot_spectrum(
     residuals: Optional[ResidualsBox] = None,
     plot_kwargs: Optional[List[Optional[dict]]] = None,
     envelope: bool = False,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
-    ylim_res: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
+    ylim_res: Optional[Tuple[Real, Real]] = None,
     scale: Optional[Tuple[str, str]] = None,
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     legend: Optional[
         Union[
             str,
             dict,
-            Tuple[float, float],
-            List[Optional[Union[dict, str, Tuple[float, float]]]],
+            Tuple[Real, Real],
+            List[Optional[Union[dict, str, Tuple[Real, Real]]]],
         ]
     ] = None,
-    figsize: Optional[Tuple[float, float]] = (6.0, 3.0),
+    figsize: Optional[Tuple[Real, Real]] = (6.0, 3.0),
     object_type: str = "planet",
     quantity: str = "flux density",
     output: Optional[str] = None,
     leg_param: Optional[List[str]] = None,
     param_fmt: Optional[Dict[str, str]] = None,
-    grid_hspace: float = 0.1,
+    grid_hspace: Real = 0.1,
     inc_model_name: bool = False,
     units: Tuple[str, str] = ("um", "W m-2 um-1"),
-    font_size: Optional[Dict[str, float]] = None,
+    font_size: Optional[Dict[str, Real]] = None,
 ) -> mpl.figure.Figure:
     """
     Function for plotting a spectral energy distribution and combining
@@ -230,18 +231,18 @@ def plot_spectrum(
         grid_sp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(grid_sp[1, 0])
-        ax2 = plt.subplot(grid_sp[0, 0])
         ax3 = plt.subplot(grid_sp[2, 0])
+        ax1 = plt.subplot(grid_sp[1, 0], sharex=ax3)
+        ax2 = plt.subplot(grid_sp[0, 0], sharex=ax3)
 
     elif residuals is not None:
         fig = plt.figure(figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(grid_sp[0, 0])
-        ax2 = None
         ax3 = plt.subplot(grid_sp[1, 0])
+        ax1 = plt.subplot(grid_sp[0, 0], sharex=ax3)
+        ax2 = None
 
     elif filters is not None:
         fig = plt.figure(figsize=figsize)
@@ -249,7 +250,7 @@ def plot_spectrum(
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
         ax1 = plt.subplot(grid_sp[1, 0])
-        ax2 = plt.subplot(grid_sp[0, 0])
+        ax2 = plt.subplot(grid_sp[0, 0], sharex=ax1)
         ax3 = None
 
     else:
@@ -1496,23 +1497,13 @@ def plot_spectrum(
     if units[0] in ["Hz", "GHz"] and xlim is None:
         ax1.invert_xaxis()
 
-        if filters is not None:
-            ax2.invert_xaxis()
-
-        if residuals is not None:
-            ax3.invert_xaxis()
-
     if xlim is None:
         xlim = ax1.get_xlim()
     else:
         ax1.set_xlim(xlim[0], xlim[1])
 
     if filters is not None:
-        ax2.set_xlim(xlim[0], xlim[1])
         ax2.set_ylim(0.0, 1.0)
-
-    if residuals is not None:
-        ax3.set_xlim(xlim[0], xlim[1])
 
     # if scale[1] == "log":
     #     ax1.yaxis.set_major_locator()
