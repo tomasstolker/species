@@ -546,7 +546,7 @@ class FitEvolution:
                     )
 
         @beartype
-        def ln_like(params, n_dim, n_param) -> Union[float, np.float64]:
+        def ln_like(params, n_dim, n_param) -> Real:
             """
             Function for return the log-likelihood for
             the sampled parameter cube.

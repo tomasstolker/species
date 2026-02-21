@@ -5,6 +5,8 @@ Module with reading functionalities for calibration spectra.
 import configparser
 import os
 
+from numbers import Real
+
 import h5py
 import numpy as np
 
@@ -65,8 +67,8 @@ class ReadCalibration:
     def resample_spectrum(
         self,
         wavel_points: np.ndarray,
-        model_param: Optional[Dict[str, float]] = None,
-        spec_res: Optional[float] = None,
+        model_param: Optional[Dict[str, Real]] = None,
+        spec_res: Optional[Real] = None,
         apply_mask: bool = False,
         interp_highres: bool = False,
     ) -> SpectrumBox:
@@ -172,11 +174,11 @@ class ReadCalibration:
     @beartype
     def get_spectrum(
         self,
-        model_param: Optional[Dict[str, float]] = None,
+        model_param: Optional[Dict[str, Real]] = None,
         apply_mask: bool = False,
-        wavel_sampling: Optional[float] = None,
+        wavel_sampling: Optional[Real] = None,
         extrapolate: bool = False,
-        min_wavelength: Optional[float] = None,
+        min_wavelength: Optional[Real] = None,
     ) -> SpectrumBox:
         """
         Function for selecting the calibration spectrum.
@@ -309,8 +311,8 @@ class ReadCalibration:
 
     @beartype
     def get_flux(
-        self, model_param: Optional[Dict[str, float]] = None
-    ) -> Tuple[float, float]:
+        self, model_param: Optional[Dict[str, Real]] = None
+    ) -> Tuple[Real, Real]:
         """
         Function for calculating the average flux for the
         ``filter_name``.
@@ -342,9 +344,9 @@ class ReadCalibration:
     @beartype
     def get_magnitude(
         self,
-        model_param: Optional[Dict[str, float]] = None,
-        distance: Optional[Tuple[float, float]] = None,
-    ) -> Tuple[Tuple[float, Optional[float]], Tuple[Optional[float], Optional[float]]]:
+        model_param: Optional[Dict[str, Real]] = None,
+        distance: Optional[Tuple[Real, Real]] = None,
+    ) -> Tuple[Tuple[Real, Optional[Real]], Tuple[Optional[Real], Optional[Real]]]:
         """
         Function for calculating the apparent magnitude for the
         ``filter_name``.

@@ -4,6 +4,7 @@ Module with utility functions for plotting data.
 
 import warnings
 
+from numbers import Real
 from string import ascii_lowercase
 
 import numpy as np
@@ -1633,7 +1634,7 @@ def remove_color_duplicates(
 
 @beartype
 def create_model_label(
-    model_param: Dict[str, float],
+    model_param: Dict[str, Real],
     object_type: str,
     model_name: str,
     inc_model_name: bool,
@@ -1761,7 +1762,10 @@ def create_model_label(
             if object_type == "planet":
                 value = f"{model_param[param_item]:{param_fmt['radius']}}"
             elif object_type == "star":
-                value = f"{model_param[param_item]*constants.R_JUP/constants.R_SUN:{param_fmt['radius']}}"
+                radius_solar = (
+                    model_param[param_item] * constants.R_JUP / constants.R_SUN
+                )
+                value = f"{radius_solar:{param_fmt['radius']}}"
 
         elif param_item[:11] == "disk_radius":
             if object_type == "planet":
@@ -1774,7 +1778,10 @@ def create_model_label(
             if object_type == "planet":
                 value = f"{model_param[param_item]:{param_fmt['mass']}}"
             elif object_type == "star":
-                value = f"{model_param[param_item]*constants.M_JUP/constants.M_SUN:{param_fmt['mass']}}"
+                mass_solar = (
+                    model_param[param_item] * constants.M_JUP / constants.M_SUN
+                )
+                value = f"{mass_solar:{param_fmt['mass']}}"
 
         elif param_item == "luminosity":
             value = f"{np.log10(model_param[param_item]):{param_fmt['luminosity']}}"

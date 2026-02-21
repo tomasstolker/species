@@ -6,6 +6,7 @@ import os
 import warnings
 
 from configparser import ConfigParser
+from numbers import Real
 
 import h5py
 import numpy as np
@@ -462,10 +463,10 @@ class ReadIsochrone:
     def _update_param(
         self,
         atmospheric_model: str,
-        model_param: Dict[str, float],
-        param_bounds: Dict[str, Tuple[float, float]],
-        extra_param: Dict[str, float],
-    ) -> Tuple[Dict[str, float], Dict[str, float]]:
+        model_param: Dict[str, Real],
+        param_bounds: Dict[str, Tuple[Real, Real]],
+        extra_param: Dict[str, Real],
+    ) -> Tuple[Dict[str, Real], Dict[str, Real]]:
         """
         Internal function for updating the dictionary with model
         parameters for the atmospheric model. Parameters that are
@@ -578,8 +579,8 @@ class ReadIsochrone:
     @beartype
     def get_isochrone(
         self,
-        age: float,
-        s_init: Optional[float] = None,
+        age: Real,
+        s_init: Optional[Real] = None,
         masses: Optional[np.ndarray] = None,
         filter_mag: Optional[str] = None,
         filters_color: Optional[Tuple[str, str]] = None,
@@ -946,8 +947,8 @@ class ReadIsochrone:
     @beartype
     def get_cooling_track(
         self,
-        mass: float,
-        s_init: Optional[float] = None,
+        mass: Real,
+        s_init: Optional[Real] = None,
         ages: Optional[np.ndarray] = None,
         filter_mag: Optional[str] = None,
         filters_color: Optional[Tuple[str, str]] = None,
@@ -1248,13 +1249,13 @@ class ReadIsochrone:
     @beartype
     def get_color_magnitude(
         self,
-        age: float,
+        age: Real,
         masses: Optional[np.ndarray],
         filters_color: Tuple[str, str],
         filter_mag: str,
         adapt_logg: bool = False,
         atmospheric_model: Optional[str] = None,
-        extra_param: Optional[Dict[str, float]] = None,
+        extra_param: Optional[Dict[str, Real]] = None,
     ) -> ColorMagBox:
         """
         Function for calculating color-magnitude pairs
@@ -1445,11 +1446,11 @@ class ReadIsochrone:
     @beartype
     def get_color_color(
         self,
-        age: float,
+        age: Real,
         masses: Optional[np.ndarray],
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
         atmospheric_model: Optional[str] = None,
-        extra_param: Optional[Dict[str, float]] = None,
+        extra_param: Optional[Dict[str, Real]] = None,
     ) -> ColorColorBox:
         """
         Function for calculating color-color pairs
@@ -1609,7 +1610,7 @@ class ReadIsochrone:
     @beartype
     def get_mass(
         self,
-        age: float,
+        age: Real,
         log_lum: np.ndarray,
     ) -> np.ndarray:
         """
@@ -1675,7 +1676,7 @@ class ReadIsochrone:
     @beartype
     def get_radius(
         self,
-        age: float,
+        age: Real,
         log_lum: np.ndarray,
     ) -> np.ndarray:
         """
@@ -1769,12 +1770,12 @@ class ReadIsochrone:
     @beartype
     def get_photometry(
         self,
-        age: float,
-        mass: float,
-        distance: float,
+        age: Real,
+        mass: Real,
+        distance: Real,
         filter_name: str,
         atmospheric_model: Optional[str] = None,
-        extra_param: Optional[Dict[str, float]] = None,
+        extra_param: Optional[Dict[str, Real]] = None,
     ) -> PhotometryBox:
         """
         Function for computing synthetic photometry by interpolating
@@ -1863,13 +1864,13 @@ class ReadIsochrone:
     @beartype
     def get_spectrum(
         self,
-        age: float,
-        mass: float,
-        distance: float,
-        wavel_range: Optional[Tuple[float, float]] = None,
-        spec_res: Optional[float] = None,
+        age: Real,
+        mass: Real,
+        distance: Real,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
+        spec_res: Optional[Real] = None,
         atmospheric_model: Optional[str] = None,
-        extra_param: Optional[Dict[str, float]] = None,
+        extra_param: Optional[Dict[str, Real]] = None,
     ) -> ModelBox:
         """
         Function for interpolating the model spectrum at a specified
@@ -1957,14 +1958,14 @@ class ReadIsochrone:
     @beartype
     def contrast_to_mass(
         self,
-        age: float,
-        distance: float,
+        age: Real,
+        distance: Real,
         filter_name: str,
-        star_mag: float,
-        contrast: Union[List[float], np.ndarray],
+        star_mag: Real,
+        contrast: Union[List[Real], np.ndarray],
         use_mag: bool = True,
         atmospheric_model: Optional[str] = None,
-        extra_param: Optional[Dict[str, float]] = None,
+        extra_param: Optional[Dict[str, Real]] = None,
         calc_phot: bool = False,
     ) -> np.ndarray:
         """

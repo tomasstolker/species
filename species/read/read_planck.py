@@ -6,6 +6,7 @@ import os
 import warnings
 
 from configparser import ConfigParser
+from numbers import Real
 
 import numpy as np
 
@@ -29,9 +30,7 @@ class ReadPlanck:
     @beartype
     def __init__(
         self,
-        wavel_range: Optional[
-            Tuple[Union[float, np.float32], Union[float, np.float32]]
-        ] = None,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
         filter_name: Optional[str] = None,
     ) -> None:
         """
@@ -78,7 +77,7 @@ class ReadPlanck:
     @staticmethod
     @beartype
     def planck(
-        wavel_points: np.ndarray, temperature: float, scaling: float
+        wavel_points: np.ndarray, temperature: Real, scaling: Real
     ) -> np.ndarray:
         """
         Internal function for calculating a Planck function.
@@ -116,8 +115,8 @@ class ReadPlanck:
     @staticmethod
     @beartype
     def update_parameters(
-        model_param: Dict[str, Union[float, List[float]]],
-    ) -> Dict[str, float]:
+        model_param: Dict[str, Union[Real, List[Real]]],
+    ) -> Dict[str, Real]:
         """
         Internal function for updating the dictionary with model
         parameters.
@@ -154,7 +153,7 @@ class ReadPlanck:
     @staticmethod
     @beartype
     def apply_ext_ism(
-        wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
+        wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: Real, v_band_red: Real
     ) -> np.ndarray:
         """
         Internal function for applying ISM extinction to a spectrum.
@@ -181,8 +180,8 @@ class ReadPlanck:
     @beartype
     def get_spectrum(
         self,
-        model_param: Dict[str, Union[float, List[float]]],
-        spec_res: Optional[float] = None,
+        model_param: Dict[str, Union[Real, List[Real]]],
+        spec_res: Optional[Real] = None,
         wavel_resample: Optional[np.ndarray] = None,
         **kwargs,
     ) -> ModelBox:
@@ -363,8 +362,8 @@ class ReadPlanck:
 
     @beartype
     def get_flux(
-        self, model_param: Dict[str, Union[float, List[float]]], synphot=None
-    ) -> Tuple[float, None]:
+        self, model_param: Dict[str, Union[Real, List[Real]]], synphot=None
+    ) -> Tuple[Real, None]:
         """
         Function for calculating the average flux
         density for the ``filter_name``.
@@ -398,8 +397,8 @@ class ReadPlanck:
 
     @beartype
     def get_magnitude(
-        self, model_param: Dict[str, Union[float, List[float]]], synphot=None
-    ) -> Tuple[Tuple[float, None], Tuple[float, None]]:
+        self, model_param: Dict[str, Union[Real, List[Real]]], synphot=None
+    ) -> Tuple[Tuple[Real, None], Tuple[Real, None]]:
         """
         Function for calculating the magnitude for the ``filter_name``.
 
@@ -441,7 +440,7 @@ class ReadPlanck:
     @beartype
     def get_color_magnitude(
         temperatures: np.ndarray,
-        radius: float,
+        radius: Real,
         filters_color: Tuple[str, str],
         filter_mag: str,
     ) -> ColorMagBox:
@@ -499,7 +498,7 @@ class ReadPlanck:
     @beartype
     def get_color_color(
         temperatures: np.ndarray,
-        radius: float,
+        radius: Real,
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
     ) -> ColorColorBox:
         """

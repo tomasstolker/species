@@ -7,6 +7,8 @@ This module was put together many contributions by Paul Mollière
 import copy
 import warnings
 
+from numbers import Real
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -66,15 +68,15 @@ def get_line_species() -> List[str]:
 @beartype
 def pt_ret_model(
     temp_3: Optional[np.ndarray],
-    delta: float,
-    alpha: float,
-    tint: float,
+    delta: Real,
+    alpha: Real,
+    tint: Real,
     press: np.ndarray,
-    metallicity: float,
-    c_o_ratio: float,
+    metallicity: Real,
+    c_o_ratio: Real,
     conv: bool = True,
     eq_chem: Optional = None,
-) -> Tuple[Optional[np.ndarray], Optional[float], Optional[float]]:
+) -> Tuple[Optional[np.ndarray], Optional[Real], Optional[Real]]:
     """
     Pressure-temperature profile for a self-luminous atmosphere (see
     Mollière et al. 2020).
@@ -216,7 +218,7 @@ def pt_ret_model(
     # Add the three temperature-point P-T description above tau = 0.1
 
     @beartype
-    def press_tau(tau: float) -> float:
+    def press_tau(tau: Real) -> Real:
         """
         Function to return the pressure in cgs units at a given
         optical depth.
@@ -354,7 +356,7 @@ def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
     pressure: np.ndarray,
-    pt_smooth: Optional[float] = 0.3,
+    pt_smooth: Optional[Real] = 0.3,
 ) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
@@ -407,17 +409,15 @@ def pt_spline_interp(
 @beartype
 def create_pt_profile(
     cube,
-    cube_index: Dict[str, float],
+    cube_index: Dict[str, Real],
     pt_profile: str,
     pressure: np.ndarray,
     knot_press: Optional[np.ndarray],
-    metallicity: float,
-    c_o_ratio: float,
-    pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
+    metallicity: Real,
+    c_o_ratio: Real,
+    pt_smooth: Optional[Union[Real, Dict[str, Real]]] = 0.3,
     eq_chem: Optional = None,
-) -> Tuple[
-    Optional[np.ndarray], Optional[np.ndarray], Optional[float], Optional[float]
-]:
+) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[Real], Optional[Real]]:
     """
     Function for creating a pressure-temperature profile.
 
@@ -557,7 +557,7 @@ def create_pt_profile(
 
 @beartype
 def make_half_pressure_better(
-    p_base: Dict[str, float], pressure: np.ndarray
+    p_base: Dict[str, Real], pressure: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for reducing the number of pressure layers from 1440 to
@@ -734,13 +734,13 @@ def calc_spectrum_clear(
     rt_object,
     pressure: np.ndarray,
     temperature: np.ndarray,
-    log_g: float,
-    c_o_ratio: Optional[float],
-    metallicity: Optional[float],
-    p_quench: Optional[float],
+    log_g: Real,
+    c_o_ratio: Optional[Real],
+    metallicity: Optional[Real],
+    p_quench: Optional[Real],
     log_x_abund: Optional[dict],
     knot_press_abund: Optional[np.ndarray],
-    abund_smooth: Optional[float],
+    abund_smooth: Optional[Real],
     pressure_grid: str = "smaller",
     contribution: bool = False,
     return_opacities: bool = False,
@@ -925,20 +925,20 @@ def calc_spectrum_clouds(
     rt_object,
     pressure: np.ndarray,
     temperature: np.ndarray,
-    c_o_ratio: float,
-    metallicity: float,
-    p_quench: Optional[float],
+    c_o_ratio: Real,
+    metallicity: Real,
+    p_quench: Optional[Real],
     log_x_abund: Optional[dict],
     log_x_base: Optional[dict],
-    cloud_dict: Dict[str, Optional[float]],
-    log_g: float,
+    cloud_dict: Dict[str, Optional[Real]],
+    log_g: Real,
     knot_press_abund: Optional[np.ndarray],
-    abund_smooth: Optional[float],
+    abund_smooth: Optional[Real],
     pressure_grid: str = "smaller",
     plotting: bool = False,
     contribution: bool = False,
-    tau_cloud: Optional[float] = None,
-    cloud_wavel: Optional[Tuple[float, float]] = None,
+    tau_cloud: Optional[Real] = None,
+    cloud_wavel: Optional[Tuple[Real, Real]] = None,
     return_opacities: bool = False,
     eq_chem: Optional = None,
 ) -> Tuple[
@@ -1461,10 +1461,10 @@ def calc_spectrum_clouds(
 
 @beartype
 def mass_frac_dict(
-    log_x_abund: Dict[str, float],
+    log_x_abund: Dict[str, Real],
     line_species: List[str],
     abund_nodes: Optional[int] = None,
-) -> Dict[str, float]:
+) -> Dict[str, Real]:
     """
     Function to return a dictionary with the mass fractions of
     all species, including molecular hydrogen and helium.
@@ -1537,9 +1537,9 @@ def mass_frac_dict(
 
 @beartype
 def calc_metal_ratio(
-    log_x_abund: Dict[str, float],
+    log_x_abund: Dict[str, Real],
     line_species: List[str],
-) -> Tuple[float, float, float]:
+) -> Tuple[Real, Real, Real]:
     """
     Function for calculating [C/H], [O/H], and C/O for a given set
     of abundances.
@@ -1644,7 +1644,7 @@ def calc_metal_ratio(
 
 
 @beartype
-def mean_molecular_weight(mass_frac: Dict[str, float]) -> float:
+def mean_molecular_weight(mass_frac: Dict[str, Real]) -> Real:
     """
     Function to calculate the mean molecular weight from a
     dictionary with mass fractions.
@@ -1679,10 +1679,10 @@ def mean_molecular_weight(mass_frac: Dict[str, float]) -> float:
 
 @beartype
 def potassium_abundance(
-    log_x_abund: Dict[str, float],
+    log_x_abund: Dict[str, Real],
     line_species: List[str],
     abund_nodes: Optional[int] = None,
-) -> Union[float, List[float]]:
+) -> Union[Real, List[Real]]:
     """
     Function to calculate the mass fraction of potassium at a solar
     ratio of the sodium and potassium abundances.
@@ -1780,8 +1780,8 @@ def potassium_abundance(
 
 @beartype
 def log_x_cloud_base(
-    c_o_ratio: float, metallicity: float, cloud_fractions: Dict[str, float]
-) -> Dict[str, float]:
+    c_o_ratio: Real, metallicity: Real, cloud_fractions: Dict[str, Real]
+) -> Dict[str, Real]:
     """
     Function for returning a dictionary with the log10 mass fractions
     at the cloud base.
@@ -1936,9 +1936,7 @@ def atomic_masses() -> dict:
 
 
 @beartype
-def cloud_mass_fraction(
-    composition: str, metallicity: float, c_o_ratio: float
-) -> float:
+def cloud_mass_fraction(composition: str, metallicity: Real, c_o_ratio: Real) -> Real:
     """
     Function to calculate the mass fraction for a cloud species.
 
@@ -2019,9 +2017,9 @@ def cloud_mass_fraction(
 def get_condensation_curve(
     composition: str,
     press: np.ndarray,
-    metallicity: float,
-    c_o_ratio: float,
-    mmw: float = 2.33,
+    metallicity: Real,
+    c_o_ratio: Real,
+    mmw: Real = 2.33,
 ) -> np.ndarray:
     """
     Function to find the base of the cloud deck by intersecting the
@@ -2084,11 +2082,11 @@ def find_cloud_deck(
     composition: str,
     press: np.ndarray,
     temp: np.ndarray,
-    metallicity: float,
-    c_o_ratio: float,
-    mmw: float = 2.33,
+    metallicity: Real,
+    c_o_ratio: Real,
+    mmw: Real = 2.33,
     plotting: bool = False,
-) -> float:
+) -> Real:
     """
     Function to find the base of the cloud deck by intersecting the
     P-T profile with the saturation vapor pressure.
@@ -2155,16 +2153,16 @@ def find_cloud_deck(
 
 @beartype
 def scale_cloud_abund(
-    params: Dict[str, float],
+    params: Dict[str, Real],
     rt_object,
     pressure: np.ndarray,
     temperature: np.ndarray,
     mmw: np.ndarray,
     abund_in: Dict[str, np.ndarray],
     composition: str,
-    tau_cloud: float,
+    tau_cloud: Real,
     pressure_grid: str,
-) -> float:
+) -> Real:
     """
     Function to scale the mass fraction of a cloud species to the
     requested optical depth.
@@ -2345,7 +2343,7 @@ def scale_cloud_abund(
 
 
 @beartype
-def cube_to_dict(cube, cube_index: Dict[str, float]) -> Dict[str, float]:
+def cube_to_dict(cube, cube_index: Dict[str, Real]) -> Dict[str, Real]:
     """
     Function to convert the parameter cube into a dictionary.
 
@@ -2371,7 +2369,7 @@ def cube_to_dict(cube, cube_index: Dict[str, float]) -> Dict[str, float]:
 
 
 @beartype
-def list_to_dict(param_list: List[str], sample_val: np.ndarray) -> Dict[str, float]:
+def list_to_dict(param_list: List[str], sample_val: np.ndarray) -> Dict[str, Real]:
     """
     Function to convert the parameter cube into a dictionary.
 
@@ -2399,7 +2397,7 @@ def list_to_dict(param_list: List[str], sample_val: np.ndarray) -> Dict[str, flo
 
 @beartype
 def return_T_cond_Fe(
-    FeH: float, CO: float, MMW: float = 2.33
+    FeH: Real, CO: Real, MMW: Real = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for solid Fe.
@@ -2436,7 +2434,7 @@ def return_T_cond_Fe(
 
 @beartype
 def return_T_cond_Fe_l(
-    FeH: float, CO: float, MMW: float = 2.33
+    FeH: Real, CO: Real, MMW: Real = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for liquid Fe.
@@ -2473,7 +2471,7 @@ def return_T_cond_Fe_l(
 
 @beartype
 def return_T_cond_Fe_comb(
-    FeH: float, CO: float, MMW: float = 2.33
+    FeH: Real, CO: Real, MMW: Real = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for Fe.
@@ -2508,7 +2506,7 @@ def return_T_cond_Fe_comb(
 
 @beartype
 def return_T_cond_MgSiO3(
-    FeH: float, CO: float, MMW: float = 2.33
+    FeH: Real, CO: Real, MMW: Real = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for MgSiO3.
@@ -2546,7 +2544,7 @@ def return_T_cond_MgSiO3(
 
 
 @beartype
-def return_T_cond_Mg2SiO4(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
+def return_T_cond_Mg2SiO4(FeH: Real) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for Mg2SiO4.
 
@@ -2573,7 +2571,7 @@ def return_T_cond_Mg2SiO4(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
 
 
 @beartype
-def return_T_cond_Al2O3(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
+def return_T_cond_Al2O3(FeH: Real) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the condensation temperature for Al2O3.
 
@@ -2623,7 +2621,7 @@ def return_T_cond_Al2O3(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
 
 @beartype
 def return_T_cond_Na2S(
-    FeH: float, CO: float, MMW: float = 2.33
+    FeH: Real, CO: Real, MMW: Real = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for Na2S.
@@ -2664,7 +2662,7 @@ def return_T_cond_Na2S(
 
 @beartype
 def return_T_cond_KCl(
-    FeH: float, CO: float, MMW: float = 2.33
+    FeH: Real, CO: Real, MMW: Real = 2.33
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the saturation pressure for KCl.
@@ -2702,7 +2700,7 @@ def return_T_cond_KCl(
 
 @beartype
 def convolve_spectrum(
-    input_wavel: np.ndarray, input_flux: np.ndarray, spec_res: float
+    input_wavel: np.ndarray, input_flux: np.ndarray, spec_res: Real
 ) -> np.ndarray:
     """
     Function to convolve a spectrum with a Gaussian filter.
@@ -2743,12 +2741,12 @@ def convolve_spectrum(
 def quench_pressure(
     pressure: np.ndarray,
     temperature: np.ndarray,
-    metallicity: float,
-    c_o_ratio: float,
-    log_g: float,
-    log_kzz: float,
+    metallicity: Real,
+    c_o_ratio: Real,
+    log_g: Real,
+    log_kzz: Real,
     eq_chem,
-) -> Optional[float]:
+) -> Optional[Real]:
     """
     Function to determine the CO/CH$_4$ quenching pressure by
     intersecting the pressure-dependent timescales of the
@@ -2845,9 +2843,9 @@ def convective_flux(
     kappa_r: np.ndarray,
     density: np.ndarray,
     c_p: np.ndarray,
-    gravity: float,
-    f_bol: float,
-    mix_length: float = 1.0,
+    gravity: Real,
+    f_bol: Real,
+    mix_length: Real = 1.0,
 ) -> np.ndarray:
     """
     Function for calculating the convective flux with mixing-length

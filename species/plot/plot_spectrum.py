@@ -4,6 +4,7 @@ that includes photometric and/or spectral data and/or models.
 """
 
 import math
+
 from numbers import Real
 
 import numpy as np
@@ -109,11 +110,11 @@ def plot_spectrum(
         The envelopes show the 68 and 99.7 percent confidence intervals,
         so :math:`1\\sigma` and :math:`3\\sigma` in case of Gaussian
         distributions.
-    xlim : tuple(numbers.Real, numbers.Real)
+    xlim : tuple(float, float)
         Limits of the wavelength axis.
-    ylim : tuple(numbers.Real, numbers.Real)
+    ylim : tuple(float, float)
         Limits of the flux axis.
-    ylim_res : tuple(numbers.Real, numbers.Real), None
+    ylim_res : tuple(float, float), None
         Limits of the residuals axis. Automatically chosen
         (based on the minimum and maximum residual value)
         if set to ``None``.
@@ -123,11 +124,11 @@ def plot_spectrum(
         set to ``None``.
     title : str
         Title.
-    offset : tuple(numbers.Real, numbers.Real), None
+    offset : tuple(float, float), None
         Offset for the label of the x- and y-axis. Default offset is
         used when the argument is set to ``None``.
     legend : str, tuple, dict, list(dict, dict), None
-        Location of the legend (str or tuple(numbers.Real, numbers.Real))
+        Location of the legend (str or tuple(float, float))
         or a dictionary with the ``**kwargs`` of
         ``matplotlib.pyplot.legend``, for example
         ``{'loc': 'upper left', 'fontsize: 12.}``. Alternatively,
@@ -136,7 +137,7 @@ def plot_spectrum(
         elements can be set to ``None``. For example,
         ``[None, {'loc': 'upper left', 'fontsize: 12.}]``, if
         only the data points should be included in a legend.
-    figsize : tuple(numbers.Real, numbers.Real)
+    figsize : tuple(float, float)
         Figure size.
     object_type : str
         Object type ('planet' or 'star'). With 'planet', the radius
@@ -163,7 +164,7 @@ def plot_spectrum(
         Formats should provided for example as '.2f' for two
         decimals, '.0f' for zero decimals, and '.1e' for
         exponential notation with one decimal.
-    grid_hspace : numbers.Real
+    grid_hspace : float
         The relative height spacing between subplots, expressed
         as a fraction of the average axis height. The default
         value is set to 0.1.
@@ -174,7 +175,7 @@ def plot_spectrum(
         Tuple with the wavelength and flux units. Supported
         units can be found in the docstring of
         :func:`~species.util.data_util.convert_units`.
-    font_size : dict(str, numbers.Real), None
+    font_size : dict(str, float), None
         Dictionary with the font sizes. The keys can be set to
         'xlabel', 'ylabel', 'title', and 'legend'. The values
         should be set to the font sizes. Default font size are
@@ -577,7 +578,7 @@ def plot_spectrum(
                         "parameter of the 'plot_spectrum' function."
                     )
 
-            if isinstance(wavelength[0], (np.float32, np.float64)):
+            if isinstance(wavelength[0], Real):
                 data_in = np.column_stack([wavelength, flux])
                 data_out = convert_units(data_in, units, convert_from=False)
 

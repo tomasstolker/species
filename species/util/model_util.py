@@ -6,6 +6,7 @@ import json
 import warnings
 
 from itertools import product
+from numbers import Real
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +15,7 @@ from astropy import units as u
 
 from beartype import beartype
 from beartype.typing import Dict, Optional, Tuple, Union
+
 # from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import RegularGridInterpolator
 from spectres.spectral_resampling_numba import spectres_numba
@@ -67,9 +69,9 @@ def convert_model_name(in_name: str) -> str:
 
 @beartype
 def powerlaw_spectrum(
-    wavel_range: Union[Tuple[float, float], Tuple[np.float32, np.float32]],
-    model_param: Dict[str, float],
-    spec_res: float = 100.0,
+    wavel_range: Tuple[Real, Real],
+    model_param: Dict[str, Real],
+    spec_res: Real = 100.0,
 ) -> ModelBox:
     """
     Function for calculating a power-law spectrum. The power-law
@@ -117,9 +119,9 @@ def powerlaw_spectrum(
 
 @beartype
 def gaussian_spectrum(
-    wavel_range: Union[Tuple[float, float], Tuple[np.float32, np.float32]],
-    model_param: Dict[str, float],
-    spec_res: float = 100.0,
+    wavel_range: Tuple[Real, Real],
+    model_param: Dict[str, Real],
+    spec_res: Real = 100.0,
     double_gaussian: bool = False,
 ) -> ModelBox:
     """
@@ -183,7 +185,7 @@ def gaussian_spectrum(
 
 
 @beartype
-def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str, float]:
+def binary_to_single(param_dict: Dict[str, Real], star_index: int) -> Dict[str, Real]:
     """
     Function for converting a dictionary with atmospheric parameters
     of a binary system to a dictionary of parameters for one of the
@@ -222,8 +224,8 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
 
 @beartype
 def extract_disk_param(
-    param_dict: Dict[str, float], disk_index: Optional[int] = None
-) -> Dict[str, float]:
+    param_dict: Dict[str, Real], disk_index: Optional[int] = None
+) -> Dict[str, Real]:
     """
     Function for extracting the blackbody disk parameters from a
     dictionary with a mix of atmospheric and blackbody parameters.
@@ -270,11 +272,11 @@ def extract_disk_param(
 def apply_obs(
     model_flux: np.ndarray,
     model_wavel: Optional[np.ndarray] = None,
-    model_param: Optional[Dict[str, float]] = None,
+    model_param: Optional[Dict[str, Real]] = None,
     data_wavel: Optional[np.ndarray] = None,
-    spec_res: Optional[float] = None,
-    rot_broad: Optional[float] = None,
-    rad_vel: Optional[float] = None,
+    spec_res: Optional[Real] = None,
+    rot_broad: Optional[Real] = None,
+    rad_vel: Optional[Real] = None,
     cross_sections: Optional[RegularGridInterpolator] = None,
     ext_model: Optional[str] = None,
 ) -> np.ndarray:
@@ -498,11 +500,11 @@ def apply_obs(
 def rot_int_cmj(
     wavel: np.ndarray,
     flux: np.ndarray,
-    vsini: float,
-    eps: float = 0.6,
+    vsini: Real,
+    eps: Real = 0.6,
     nr: int = 10,
     ntheta: int = 100,
-    dif: float = 0.0,
+    dif: Real = 0.0,
 ):
     """
     A routine to quickly rotationally broaden a spectrum in linear time.
@@ -579,7 +581,7 @@ def rot_int_cmj(
 
 
 @beartype
-def check_nearest_spec(model_name: str, model_param: Dict[str, float]):
+def check_nearest_spec(model_name: str, model_param: Dict[str, Real]):
     """
     Check if the nearest grid points of the requested model parameters
     have a spectrum stored in the database. For some grids, spectra

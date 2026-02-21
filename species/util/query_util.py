@@ -10,7 +10,6 @@ from astroquery.simbad import Simbad
 from astroquery.vizier import Vizier
 from beartype import beartype
 
-
 # class NoStdStreams:
 #     """
 #     Text

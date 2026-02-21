@@ -3,6 +3,8 @@ Module with functions for plotting the results obtained with the
 :class:`~species.fit.fit_evolution.FitEvolution` class.
 """
 
+from numbers import Real
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -20,13 +22,13 @@ def plot_cooling(
     tag: str,
     n_samples: int = 50,
     cooling_param: str = "log_lum",
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
     xscale: Optional[str] = "linear",
     yscale: Optional[str] = "linear",
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    offset: Optional[Tuple[Real, Real]] = None,
+    figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
     output: Optional[str] = None,
 ) -> Tuple[mpl.figure.Figure, List[List[List[np.ndarray]]], np.ndarray]:
     """
@@ -337,13 +339,13 @@ def plot_cooling(
 def plot_isochrones(
     tag: str,
     n_samples: int = 50,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
     xscale: Optional[str] = "linear",
     yscale: Optional[str] = "linear",
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    offset: Optional[Tuple[Real, Real]] = None,
+    figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
     output: Optional[str] = None,
 ) -> Tuple[mpl.figure.Figure, List[List[List[np.ndarray]]], np.ndarray]:
     """

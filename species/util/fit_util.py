@@ -6,6 +6,7 @@ import os
 import warnings
 
 from configparser import ConfigParser
+from numbers import Real
 
 import h5py
 import numpy as np
@@ -31,7 +32,7 @@ def multi_photometry(
     datatype: str,
     spectrum: str,
     filters: List[str],
-    parameters: Dict[str, float],
+    parameters: Dict[str, Real],
     radtrans: Optional[ReadRadtrans] = None,
     verbose: bool = True,
 ) -> SynphotBox:
@@ -77,7 +78,7 @@ def multi_photometry(
 
         print("\nParameters:")
         for param_key, param_value in parameters.items():
-            if isinstance(param_value, float):
+            if isinstance(param_value, Real):
                 if -0.1 < param_value < 0.1:
                     print(f"   - {param_key} = {param_value:.2e}")
                 else:
@@ -214,7 +215,7 @@ def multi_photometry(
 
 @beartype
 def get_residuals(
-    parameters: Dict[str, float],
+    parameters: Dict[str, Real],
     objectbox: ObjectBox,
     tag: Optional[str] = None,
     inc_phot: Union[bool, List[str]] = True,

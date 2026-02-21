@@ -6,6 +6,7 @@ import os
 
 from beartype import beartype
 
+
 @beartype
 def create_config(test_path: str) -> None:
     """

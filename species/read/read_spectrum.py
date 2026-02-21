@@ -5,6 +5,7 @@ Module with reading functionalities for spectral libraries.
 import os
 
 from configparser import ConfigParser
+from numbers import Real
 
 import h5py
 import numpy as np
@@ -69,7 +70,7 @@ class ReadSpectrum:
         object_name: Optional[Union[str, List[str]]] = None,
         sptypes: Optional[List[str]] = None,
         exclude_nan: bool = True,
-        av_ext: Optional[float] = None,
+        av_ext: Optional[Real] = None,
     ) -> SpectrumBox:
         """
         Function for selecting spectra from the database.
@@ -280,7 +281,7 @@ class ReadSpectrum:
         self,
         object_name: Optional[Union[str, List[str]]] = None,
         sptypes: Optional[List[str]] = None,
-        av_ext: Optional[float] = None,
+        av_ext: Optional[Real] = None,
     ) -> PhotometryBox:
         """
         Function for calculating the flux density for the filter
@@ -367,7 +368,7 @@ class ReadSpectrum:
         self,
         object_name: Optional[Union[str, List[str]]] = None,
         sptypes: Optional[List[str]] = None,
-        av_ext: Optional[float] = None,
+        av_ext: Optional[Real] = None,
     ) -> PhotometryBox:
         """
         Function for calculating the magnitude for the filter

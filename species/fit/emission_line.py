@@ -6,6 +6,8 @@ import configparser
 import os
 import warnings
 
+from numbers import Real
+
 import h5py
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -46,8 +48,8 @@ class EmissionLine:
         object_name: str,
         spec_name: str,
         hydrogen_line: Optional[str] = None,
-        lambda_rest: Optional[float] = None,
-        wavel_range: Optional[Tuple[float, float]] = None,
+        lambda_rest: Optional[Real] = None,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
     ) -> None:
         """
         Parameters
@@ -472,10 +474,10 @@ class EmissionLine:
     @beartype
     def integrate_flux(
         self,
-        wavel_int: Tuple[float, float],
+        wavel_int: Tuple[Real, Real],
         interp_kind: str = "linear",
         plot_filename: Optional[str] = "int_line.pdf",
-    ) -> Tuple[np.float64, np.float64]:
+    ) -> Tuple[Real, Real]:
         """
         Method for calculating the integrated line flux and error. The
         spectrum is first interpolated to :math:`R = 100000` and then
@@ -772,8 +774,8 @@ class EmissionLine:
     def fit_gaussian(
         self,
         tag: str,
-        min_num_live_points: float = 400,
-        bounds: Optional[Dict[str, Union[Tuple[float, float]]]] = None,
+        min_num_live_points: int = 400,
+        bounds: Optional[Dict[str, Tuple[Real, Real]]] = None,
         output: str = "ultranest/",
         plot_filename: Optional[str] = "line_fit.pdf",
         show_status: bool = True,
@@ -823,7 +825,7 @@ class EmissionLine:
 
         @beartype
         def gaussian_function(
-            amplitude: float, mean: float, sigma: float, wavel: np.ndarray
+            amplitude: Real, mean: Real, sigma: Real, wavel: np.ndarray
         ):
             return amplitude * np.exp(-0.5 * (wavel - mean) ** 2 / sigma**2)
 
@@ -913,7 +915,7 @@ class EmissionLine:
             return params
 
         @beartype
-        def lnlike_ultranest(params: np.ndarray) -> np.float64:
+        def lnlike_ultranest(params: np.ndarray) -> Real:
             """
             Function for calculating the log-likelihood for the
             sampled parameter cube.
@@ -1402,8 +1404,8 @@ class EmissionLine:
     @beartype
     def accretion_luminosity(
         self,
-        line_lum: Union[float, np.ndarray],
-    ) -> Union[float, np.ndarray]:
+        line_lum: Union[Real, np.ndarray],
+    ) -> Union[Real, np.ndarray]:
         """
         Method for calculating the accretion luminosity from the
         (hydrogen) line luminosity with the relation from `Aoyama

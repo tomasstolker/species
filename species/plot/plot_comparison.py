@@ -8,6 +8,8 @@ import configparser
 import os
 import warnings
 
+from numbers import Real
+
 import h5py
 import numpy as np
 import matplotlib as mpl
@@ -33,11 +35,11 @@ from species.util.spec_util import smooth_spectrum
 @beartype
 def plot_statistic(
     tag: str,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    offset: Optional[Tuple[Real, Real]] = None,
+    figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
@@ -203,13 +205,13 @@ def plot_statistic(
 def plot_empirical_spectra(
     tag: str,
     n_spectra: Optional[int] = None,
-    flux_offset: Optional[float] = None,
-    label_pos: Optional[Tuple[float, float]] = None,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
+    flux_offset: Optional[Real] = None,
+    label_pos: Optional[Tuple[Real, Real]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    offset: Optional[Tuple[Real, Real]] = None,
+    figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
@@ -466,11 +468,11 @@ def plot_empirical_spectra(
 def plot_grid_statistic(
     tag: str,
     upsample: bool = False,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    offset: Optional[Tuple[Real, Real]] = None,
+    figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
     output: Optional[str] = None,
     extra_param: Optional[str] = None,
     nlevels_main: int = 20,
@@ -479,7 +481,7 @@ def plot_grid_statistic(
         Union[
             str,
             dict,
-            Tuple[float, float],
+            Tuple[Real, Real],
         ]
     ] = "best",
 ) -> mpl.figure.Figure:
@@ -984,13 +986,13 @@ def plot_grid_statistic(
 def plot_model_spectra(
     tag: str,
     n_spectra: Optional[int] = None,
-    flux_offset: Optional[float] = None,
-    label_pos: Optional[Tuple[float, float]] = None,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
+    flux_offset: Optional[Real] = None,
+    label_pos: Optional[Tuple[Real, Real]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    offset: Optional[Tuple[Real, Real]] = None,
+    figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
     output: Optional[str] = None,
     leg_param: Optional[List[str]] = None,
 ) -> mpl.figure.Figure:

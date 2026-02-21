@@ -4,6 +4,8 @@ Module for plotting MCMC results.
 
 import warnings
 
+from numbers import Real
+
 import corner
 import numpy as np
 import matplotlib as mpl
@@ -40,9 +42,9 @@ from species.util.retrieval_util import (
 def plot_posterior(
     tag: str,
     title: Optional[str] = None,
-    offset: Optional[Tuple[float, float]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     title_fmt: Union[str, List[str]] = ".2f",
-    limits: Optional[List[Tuple[float, float]]] = None,
+    limits: Optional[List[Tuple[Real, Real]]] = None,
     max_prob: bool = False,
     vmr: bool = False,
     inc_luminosity: bool = False,
@@ -336,7 +338,7 @@ def plot_posterior(
 
     print("\nMedian parameters:")
     for param_key, param_value in box.median_sample.items():
-        if isinstance(param_value, float):
+        if isinstance(param_value, Real):
             if -0.1 < param_value < 0.1:
                 print(f"   - {param_key} = {param_value:.2e}")
             else:
@@ -353,7 +355,7 @@ def plot_posterior(
     if box.prob_sample is not None:
         print("\nSample with the maximum likelihood:")
         for param_key, param_value in box.prob_sample.items():
-            if isinstance(param_value, float):
+            if isinstance(param_value, Real):
                 if -0.1 < param_value < 0.1:
                     print(f"   - {param_key} = {param_value:.2e}")
                 else:
@@ -1052,7 +1054,7 @@ def plot_posterior(
 
         elif (
             box.attributes["model_type"] == "evolution"
-            and box.attributes["regular_grid"] == True
+            and box.attributes["regular_grid"] is True
         ):
             read_model = ReadIsochrone(box.attributes["model_name"])
             grid_points = read_model.get_points()
@@ -1130,7 +1132,7 @@ def plot_mag_posterior(
     tag: str,
     filter_name: str,
     n_samples: Optional[int] = None,
-    xlim: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
 ) -> Tuple[np.ndarray, mpl.figure.Figure]:
     """
@@ -1239,7 +1241,7 @@ def plot_mag_posterior(
 def plot_size_distributions(
     tag: str,
     random: Optional[int] = None,
-    offset: Optional[Tuple[float, float]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
@@ -1391,10 +1393,10 @@ def plot_size_distributions(
 def plot_extinction(
     tag: str,
     random: Optional[int] = None,
-    wavel_range: Optional[Tuple[float, float]] = None,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
-    offset: Optional[Tuple[float, float]] = None,
+    wavel_range: Optional[Tuple[Real, Real]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """

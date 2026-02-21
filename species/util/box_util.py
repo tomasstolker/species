@@ -4,6 +4,8 @@ Utility functions for boxes.
 
 import warnings
 
+from numbers import Real
+
 import numpy as np
 
 from beartype import beartype
@@ -16,7 +18,7 @@ from species.util.core_util import print_section
 
 @beartype
 def update_objectbox(
-    objectbox: ObjectBox, model_param: Dict[str, float], model: Optional[str] = None
+    objectbox: ObjectBox, model_param: Dict[str, Real], model: Optional[str] = None
 ) -> ObjectBox:
     """
     Function for updating the spectra and/or photometric fluxes in

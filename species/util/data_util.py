@@ -6,6 +6,7 @@ import os
 import tarfile
 import warnings
 
+from numbers import Real
 from pathlib import Path
 
 import h5py
@@ -326,7 +327,7 @@ def sort_data(
 def write_data(
     model: str,
     parameters: List[str],
-    wavel_sampling: Union[float, int],
+    wavel_sampling: Real,
     database: h5py._hl.files.File,
     data_sorted: List[np.ndarray],
 ) -> None:

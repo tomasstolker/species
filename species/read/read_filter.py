@@ -6,6 +6,7 @@ import os
 import warnings
 
 from configparser import ConfigParser
+from numbers import Real
 
 import h5py
 import numpy as np
@@ -114,7 +115,7 @@ class ReadFilter:
     @beartype
     def wavelength_range(
         self,
-    ) -> Tuple[Union[np.float32, np.float64], Union[np.float32, np.float64]]:
+    ) -> Tuple[Real, Real]:
         """
         Extract the wavelength range of the filter profile.
 
@@ -131,7 +132,7 @@ class ReadFilter:
         return data[0, 0], data[-1, 0]
 
     @beartype
-    def mean_wavelength(self) -> Union[np.float32, np.float64]:
+    def mean_wavelength(self) -> Real:
         """
         Calculate the weighted mean wavelength of the filter profile.
 
@@ -148,7 +149,7 @@ class ReadFilter:
         )
 
     @beartype
-    def effective_wavelength(self) -> Union[np.float32, np.float64]:
+    def effective_wavelength(self) -> Real:
         """
         Calculate the effective wavelength of the filter profile.
         The effective wavelength is calculated as the weighted
@@ -193,7 +194,7 @@ class ReadFilter:
         ) / np.trapezoid(filter_profile[:, 1] * flux_filter, x=filter_profile[:, 0])
 
     @beartype
-    def filter_fwhm(self) -> Optional[float]:
+    def filter_fwhm(self) -> Optional[Real]:
         """
         Calculate the full width at half maximum (FWHM)
         of the filter profile.
@@ -227,7 +228,7 @@ class ReadFilter:
         return filt_fwhm
 
     @beartype
-    def effective_width(self) -> Union[np.float32, np.float64]:
+    def effective_width(self) -> Real:
         """
         Calculate the effective width of the filter profile. The
         effective width is equivalent to the horizontal size of a

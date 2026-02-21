@@ -1598,7 +1598,7 @@ class FitModel:
 
     @beartype
     def _prior_transform(
-        self, cube, bounds: Dict[str, Tuple[float, float]], cube_index: Dict[str, int]
+        self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
     ):
         """
         Function to transform the sampled unit cube into a
@@ -1681,7 +1681,7 @@ class FitModel:
     def _lnlike_func(
         self,
         params,
-    ) -> Union[np.float64, float]:
+    ) -> Real:
         """
         Function for calculating the log-likelihood for the sampled
         parameter cube. The model spectrum will be compared with
@@ -2720,9 +2720,7 @@ class FitModel:
             self._prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
-        def _lnlike_multinest(
-            params, n_dim: int, n_param: int
-        ) -> Union[float, np.float64]:
+        def _lnlike_multinest(params, n_dim: int, n_param: int) -> Real:
             """
             Function for return the log-likelihood for the
             sampled parameter cube.
@@ -2995,7 +2993,7 @@ class FitModel:
             return self._prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
-        def _lnlike_ultranest(params: np.ndarray) -> Union[float, np.float64]:
+        def _lnlike_ultranest(params: np.ndarray) -> Real:
             """
             Function for returning the log-likelihood for the
             sampled parameter cube.

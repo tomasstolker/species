@@ -4,6 +4,8 @@ Module with the  ``Box`` classes and ``create_box`` function.
 
 import warnings
 
+from numbers import Real
+
 import numpy as np
 
 from beartype import beartype
@@ -205,7 +207,7 @@ class ModelBox(Box):
         self.extra_out = None
         self.units = ("um", "W m-2 um-1")
 
-    def smooth_spectrum(self, spec_res: float) -> None:
+    def smooth_spectrum(self, spec_res: Real) -> None:
         """
         Method for smoothing the spectrum with a Gaussian kernel to the
         instrument resolution. The method is best applied on an input

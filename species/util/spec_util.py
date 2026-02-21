@@ -5,6 +5,7 @@ Utility functions for manipulating spectra.
 import warnings
 
 from math import ceil
+from numbers import Real
 
 import numpy as np
 
@@ -15,8 +16,8 @@ from scipy.ndimage import gaussian_filter
 
 @beartype
 def create_wavelengths(
-    wavel_range: Tuple[Union[float, np.float32], Union[float, np.float32]],
-    wavel_sampling: float,
+    wavel_range: Tuple[Real, Real],
+    wavel_sampling: Real,
 ) -> np.ndarray:
     """
     Function for creating logarithmically-spaced wavelengths,
@@ -61,7 +62,7 @@ def create_wavelengths(
 def smooth_spectrum(
     wavelength: np.ndarray,
     flux: np.ndarray,
-    spec_res: float,
+    spec_res: Real,
     kernel_size: int = 11,
     force_smooth: bool = False,
 ) -> np.ndarray:

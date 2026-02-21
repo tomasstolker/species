@@ -2,6 +2,8 @@
 Utility functions for generating ``petitRADTRANS`` spectra.
 """
 
+from numbers import Real
+
 import numpy as np
 
 from beartype import beartype
@@ -19,12 +21,12 @@ def retrieval_spectrum(
     line_species: List[str],
     cloud_species: List[str],
     quenching: Optional[str],
-    spec_res: Optional[float],
-    distance: Optional[float],
-    pt_smooth: Optional[float],
+    spec_res: Optional[Real],
+    distance: Optional[Real],
+    pt_smooth: Optional[Real],
     temp_nodes: Optional[np.integer],
     abund_nodes: Optional[np.integer],
-    abund_smooth: Optional[float],
+    abund_smooth: Optional[Real],
     read_rad: ReadRadtrans,
     sample: np.ndarray,
 ) -> ModelBox:

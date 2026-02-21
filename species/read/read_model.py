@@ -5,6 +5,8 @@ Module with reading functionalities for atmospheric model spectra.
 import os
 import warnings
 
+from numbers import Real
+
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -65,7 +67,7 @@ class ReadModel:
     def __init__(
         self,
         model: str,
-        wavel_range: Optional[Tuple[float, float]] = None,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
         filter_name: Optional[str] = None,
     ):
         """
@@ -239,9 +241,7 @@ class ReadModel:
         return wl_points[wl_index], wl_index
 
     @beartype
-    def interpolate_grid(
-        self, teff_range: Optional[Tuple[float, float]] = None
-    ) -> None:
+    def interpolate_grid(self, teff_range: Optional[Tuple[Real, Real]] = None) -> None:
         """
         Internal function for linearly interpolating the grid of
         model spectra for a requested wavelength range.
@@ -322,9 +322,9 @@ class ReadModel:
         self,
         wavelength: np.ndarray,
         flux: np.ndarray,
-        lognorm_radius: float,
-        lognorm_sigma: float,
-        lognorm_ext: float,
+        lognorm_radius: Real,
+        lognorm_sigma: Real,
+        lognorm_ext: Real,
     ) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a spectrum.
@@ -383,9 +383,9 @@ class ReadModel:
         self,
         wavelength: np.ndarray,
         flux: np.ndarray,
-        powerlaw_max: float,
-        powerlaw_exp: float,
-        powerlaw_ext: float,
+        powerlaw_max: Real,
+        powerlaw_exp: Real,
+        powerlaw_ext: Real,
     ) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a
@@ -440,7 +440,7 @@ class ReadModel:
     @staticmethod
     @beartype
     def apply_ext_ism(
-        wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
+        wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: Real, v_band_red: Real
     ) -> np.ndarray:
         """
         Internal function for applying ISM extinction to a spectrum.
@@ -467,8 +467,8 @@ class ReadModel:
     @beartype
     def get_model(
         self,
-        model_param: Dict[str, float],
-        spec_res: Optional[float] = None,
+        model_param: Dict[str, Real],
+        spec_res: Optional[Real] = None,
         wavel_resample: Optional[np.ndarray] = None,
         magnitude: bool = False,
         ext_filter: Optional[str] = None,
@@ -1010,8 +1010,8 @@ class ReadModel:
     @beartype
     def get_data(
         self,
-        model_param: Dict[str, float],
-        spec_res: Optional[float] = None,
+        model_param: Dict[str, Real],
+        spec_res: Optional[Real] = None,
         wavel_resample: Optional[np.ndarray] = None,
         ext_filter: Optional[str] = None,
     ) -> ModelBox:
@@ -1474,8 +1474,8 @@ class ReadModel:
 
     @beartype
     def get_flux(
-        self, model_param: Dict[str, float], synphot=None, return_box: bool = False
-    ) -> Union[Tuple[Optional[float], Optional[float]], PhotometryBox]:
+        self, model_param: Dict[str, Real], synphot=None, return_box: bool = False
+    ) -> Union[Tuple[Optional[Real], Optional[Real]], PhotometryBox]:
         """
         Function for calculating the average flux density for the
         ``filter_name``.
@@ -1544,9 +1544,9 @@ class ReadModel:
     @beartype
     def get_magnitude(
         self,
-        model_param: Dict[str, float],
+        model_param: Dict[str, Real],
         return_box: bool = False,
-    ) -> Union[Tuple[Optional[float], Optional[float]], PhotometryBox]:
+    ) -> Union[Tuple[Optional[Real], Optional[Real]], PhotometryBox]:
         """
         Function for calculating the apparent and absolute magnitudes
         for the ``filter_name``.
@@ -1657,7 +1657,7 @@ class ReadModel:
         return app_mag[0], abs_mag[0]
 
     @beartype
-    def get_bounds(self) -> Dict[str, Tuple[float, float]]:
+    def get_bounds(self) -> Dict[str, Tuple[Real, Real]]:
         """
         Function for extracting the grid boundaries.
 
@@ -1744,7 +1744,7 @@ class ReadModel:
         return param
 
     @beartype
-    def get_sampling(self) -> float:
+    def get_sampling(self) -> Real:
         """
         Function for returning the wavelength sampling,
         :math:`\\lambda/\\Delta\\lambda`, of the
@@ -1766,8 +1766,8 @@ class ReadModel:
     @beartype
     def binary_spectrum(
         self,
-        model_param: Dict[str, float],
-        spec_res: Optional[float] = None,
+        model_param: Dict[str, Real],
+        spec_res: Optional[Real] = None,
         wavel_resample: Optional[np.ndarray] = None,
         **kwargs,
     ) -> ModelBox:
@@ -1860,8 +1860,8 @@ class ReadModel:
 
     @beartype
     def integrate_spectrum(
-        self, model_param: Dict[str, float]
-    ) -> Tuple[float, Optional[float]]:
+        self, model_param: Dict[str, Real]
+    ) -> Tuple[Real, Optional[Real]]:
         """
         Function for calculating the bolometric flux by integrating
         a model spectrum at the requested parameters. Therefore, when
@@ -1945,7 +1945,7 @@ class ReadModel:
     @beartype
     def create_color_magnitude(
         self,
-        model_param: Dict[str, float],
+        model_param: Dict[str, Real],
         filters_color: Tuple[str, str],
         filter_mag: str,
     ) -> ColorMagBox:
@@ -2032,7 +2032,7 @@ class ReadModel:
     @beartype
     def create_color_color(
         self,
-        model_param: Dict[str, float],
+        model_param: Dict[str, Real],
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
     ) -> ColorColorBox:
         """

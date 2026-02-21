@@ -5,6 +5,8 @@ Module for plotting atmospheric retrieval results.
 import sys
 import warnings
 
+from numbers import Real
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,9 +35,9 @@ def plot_pt_profile(
     tag: str,
     random: Optional[int] = 100,
     envelope: bool = False,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
-    offset: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
     radtrans: Optional[ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
@@ -833,7 +835,7 @@ def plot_pt_profile(
 def plot_opacities(
     tag: str,
     radtrans: ReadRadtrans,
-    offset: Optional[Tuple[float, float]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
@@ -1318,7 +1320,7 @@ def plot_opacities(
 @beartype
 def plot_clouds(
     tag: str,
-    offset: Optional[Tuple[float, float]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
     radtrans: Optional[ReadRadtrans] = None,
     composition: str = "MgSiO3",
@@ -1530,9 +1532,9 @@ def plot_clouds(
 @beartype
 def plot_abundances(
     tag: str,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None,
-    offset: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[Real, Real]] = None,
+    ylim: Optional[Tuple[Real, Real]] = None,
+    offset: Optional[Tuple[Real, Real]] = None,
     output: Optional[str] = None,
     legend: Optional[dict] = None,
     radtrans: Optional[ReadRadtrans] = None,

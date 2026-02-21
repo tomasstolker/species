@@ -5,6 +5,7 @@ Module with reading functionalities for data from individual objects.
 import os
 
 from configparser import ConfigParser
+from numbers import Real
 
 import h5py
 import numpy as np
@@ -162,7 +163,7 @@ class ReadObject:
         return spectrum
 
     @beartype
-    def get_distance(self) -> Tuple[float, float]:
+    def get_distance(self) -> Tuple[Real, Real]:
         """
         Function for reading the distance to the object.
 
@@ -196,7 +197,7 @@ class ReadObject:
         return distance[0], distance[1]
 
     @beartype
-    def get_parallax(self) -> Tuple[float, float]:
+    def get_parallax(self) -> Tuple[Real, Real]:
         """
         Function for reading the parallax of the object.
 
@@ -227,7 +228,7 @@ class ReadObject:
     @beartype
     def get_absmag(
         self, filter_name: str
-    ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
+    ) -> Union[Tuple[Real, Optional[Real]], Tuple[np.ndarray, Optional[np.ndarray]]]:
         """
         Function for calculating the absolute magnitudes of the object
         from the apparent magnitudes and distance. The errors on the

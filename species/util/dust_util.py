@@ -5,6 +5,8 @@ Utility functions for dust cross sections and extinction.
 import os
 import configparser
 
+from numbers import Real
+
 import h5py
 import numpy as np
 
@@ -55,7 +57,7 @@ def check_dust_database() -> str:
 
 @beartype
 def log_normal_distribution(
-    radius_g: float, sigma_g: float, n_bins: int
+    radius_g: Real, sigma_g: Real, n_bins: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Function for returning a log-normal size distribution. See Eq. 9
@@ -121,7 +123,7 @@ def log_normal_distribution(
 
 @beartype
 def power_law_distribution(
-    exponent: float, radius_min: float, radius_max: float, n_bins: int
+    exponent: Real, radius_min: Real, radius_max: Real, n_bins: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Function for returning a power-law size distribution.
@@ -175,10 +177,10 @@ def power_law_distribution(
 def dust_cross_section(
     dn_grains: np.ndarray,
     radii: np.ndarray,
-    wavelength: float,
-    n_index: float,
-    k_index: float,
-) -> np.float64:
+    wavelength: Real,
+    n_index: Real,
+    k_index: Real,
+) -> Real:
     """
     Function for calculating the extinction cross section for a size
     distribution of dust grains.
@@ -235,11 +237,11 @@ def dust_cross_section(
 @beartype
 def calc_reddening(
     filters_color: Tuple[str, str],
-    extinction: Tuple[str, float],
+    extinction: Tuple[str, Real],
     composition: str = "MgSiO3",
     structure: str = "crystalline",
-    radius_g: float = 1.0,
-) -> Tuple[float, float]:
+    radius_g: Real = 1.0,
+) -> Tuple[Real, Real]:
     """
     Function for calculating the reddening of a color given the
     extinction for a given filter. A log-normal size distribution with
@@ -470,7 +472,7 @@ def interp_powerlaw(verbose: bool = True) -> Tuple[
 
 @beartype
 def ism_extinction(
-    av_mag: float, rv_red: float, wavelengths: Union[np.ndarray, List[float], float]
+    av_mag: Real, rv_red: Real, wavelengths: Union[np.ndarray, List[Real], Real]
 ) -> np.ndarray:
     """
     Function for calculating the optical and IR extinction
@@ -494,7 +496,7 @@ def ism_extinction(
         Extinction (mag) at ``wavelengths``.
     """
 
-    if isinstance(wavelengths, float):
+    if isinstance(wavelengths, Real):
         wavelengths = np.array([wavelengths])
 
     elif isinstance(wavelengths, list):
@@ -541,7 +543,7 @@ def ism_extinction(
 
 @beartype
 def apply_ism_ext(
-    wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
+    wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: Real, v_band_red: Real
 ) -> np.ndarray:
     """
     Function for applying ISM extinction to a spectrum.
@@ -567,9 +569,7 @@ def apply_ism_ext(
 
 
 @beartype
-def convert_to_av(
-    filter_name: str, filter_ext: float, v_band_red: float = 3.1
-) -> float:
+def convert_to_av(filter_name: str, filter_ext: Real, v_band_red: Real = 3.1) -> Real:
     """
     Function for converting the extinction in any filter from
     the `SVO Filter Profile Service <http://svo2.cab.inta-csic.

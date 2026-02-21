@@ -9,6 +9,8 @@ import configparser
 import os
 import warnings
 
+from numbers import Real
+
 import h5py
 import numpy as np
 
@@ -87,11 +89,11 @@ class CompareSpectra:
         self,
         tag: str,
         spec_library: str,
-        wavel_range: Optional[Tuple[Optional[float], Optional[float]]] = None,
+        wavel_range: Optional[Tuple[Optional[Real], Optional[Real]]] = None,
         sptypes: Optional[List[str]] = None,
-        av_ext: Optional[Union[List[float], np.ndarray]] = None,
-        rad_vel: Optional[Union[List[float], np.ndarray]] = None,
-    ) -> List[Tuple[float, str, str]]:
+        av_ext: Optional[Union[List[Real], np.ndarray]] = None,
+        rad_vel: Optional[Union[List[Real], np.ndarray]] = None,
+    ) -> List[Tuple[Real, str, str]]:
         """
         Method for finding the best matching empirical spectra
         from the selected library by evaluating the goodness-of-fit
@@ -405,8 +407,8 @@ class CompareSpectra:
         self,
         tag: str,
         model: str,
-        av_points: Optional[Union[List[float], np.ndarray]] = None,
-        fix_logg: Optional[float] = None,
+        av_points: Optional[Union[List[Real], np.ndarray]] = None,
+        fix_logg: Optional[Real] = None,
         scale_spec: Optional[List[str]] = None,
         weights: bool = True,
         inc_phot: Union[List[str], bool] = False,

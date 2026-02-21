@@ -14,6 +14,7 @@ import time
 import warnings
 
 # from math import isclose
+from numbers import Real
 
 import dynesty
 import matplotlib.pyplot as plt
@@ -59,7 +60,6 @@ from species.util.retrieval_util import (
     scale_cloud_abund,
 )
 
-
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
@@ -81,14 +81,14 @@ class AtmosphericRetrieval:
         cloud_species: Optional[List[str]] = None,
         res_mode: str = "c-k",
         output_folder: str = "multinest",
-        wavel_range: Optional[Tuple[float, float]] = None,
+        wavel_range: Optional[Tuple[Real, Real]] = None,
         scattering: bool = True,
         inc_spec: Union[bool, List[str]] = True,
         inc_phot: Union[bool, List[str]] = False,
         pressure_grid: str = "smaller",
-        weights: Optional[Dict[str, float]] = None,
+        weights: Optional[Dict[str, Real]] = None,
         ccf_species: Optional[List[str]] = None,
-        max_pressure: float = 1e3,
+        max_pressure: Real = 1e3,
         lbl_opacity_sampling: Optional[int] = None,
     ) -> None:
         """
@@ -457,7 +457,7 @@ class AtmosphericRetrieval:
             print(f"   - {item} = {self.weights[item]:.2e}")
 
     @beartype
-    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
+    def rebin_opacities(self, spec_res: Real, out_folder: str = "rebin_out") -> None:
         """
         Function for downsampling the ``c-k`` opacities from
         :math:`\\lambda/\\Delta\\lambda = 1000` to a smaller wavelength
@@ -769,7 +769,7 @@ class AtmosphericRetrieval:
 
     @beartype
     def _prior_transform(
-        self, cube, bounds: Dict[str, Tuple[float, float]], cube_index: Dict[str, int]
+        self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
     ):
         """
         Function to transform the sampled unit cube into a
@@ -1689,11 +1689,11 @@ class AtmosphericRetrieval:
     def _lnlike(
         self,
         cube,
-        bounds: Dict[str, Tuple[float, float]],
+        bounds: Dict[str, Tuple[Real, Real]],
         cube_index: Dict[str, int],
         rt_object,
         lowres_radtrans,
-    ) -> float:
+    ) -> Real:
         """
         Function for calculating the log-likelihood from the
         sampled parameter cube.
@@ -2988,13 +2988,13 @@ class AtmosphericRetrieval:
         fit_corr: Optional[List[str]] = None,
         cross_corr: Optional[List[str]] = None,
         check_isothermal: bool = False,
-        pt_smooth: Optional[float] = 0.3,
-        abund_smooth: Optional[float] = 0.3,
-        check_flux: Optional[float] = None,
+        pt_smooth: Optional[Real] = 0.3,
+        abund_smooth: Optional[Real] = 0.3,
+        check_flux: Optional[Real] = None,
         temp_nodes: Optional[int] = None,
         abund_nodes: Optional[int] = None,
-        prior: Optional[Dict[str, Tuple[float, float]]] = None,
-        check_phot_press: Optional[float] = None,
+        prior: Optional[Dict[str, Tuple[Real, Real]]] = None,
+        check_phot_press: Optional[Real] = None,
         apply_rad_vel: Optional[List[str]] = None,
         apply_vsini: Optional[List[str]] = None,
         global_fsed: bool = True,
@@ -3694,8 +3694,8 @@ class AtmosphericRetrieval:
         n_live_points: int = 1000,
         resume: bool = False,
         const_efficiency_mode: Optional[bool] = True,
-        sampling_efficiency: Optional[float] = 0.05,
-        evidence_tolerance: Optional[float] = 0.5,
+        sampling_efficiency: Optional[Real] = 0.05,
+        evidence_tolerance: Optional[Real] = 0.5,
         out_basename: Optional[str] = None,
         plotting: bool = False,
         **kwargs,
@@ -3850,9 +3850,7 @@ class AtmosphericRetrieval:
             self._prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
-        def _lnlike_multinest(
-            params, n_dim: int, n_param: int
-        ) -> Union[float, np.float64]:
+        def _lnlike_multinest(params, n_dim: int, n_param: int) -> Real:
             """
             Function to calculate the log-likelihood for the
             sampled parameter cube.
@@ -3899,7 +3897,7 @@ class AtmosphericRetrieval:
     def run_dynesty(
         self,
         n_live_points: int = 2000,
-        evidence_tolerance: float = 0.5,
+        evidence_tolerance: Real = 0.5,
         dynamic: bool = False,
         sample_method: str = "auto",
         bound: str = "multi",
