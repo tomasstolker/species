@@ -128,4 +128,4 @@ def add_sonora_bobcat(database: h5py._hl.files.File, input_path: str) -> None:
             dset.attrs["model"] = "sonora-bobcat"
 
             print(" [DONE]")
-            print(f"Database tag: sonora{metallicity}")
+            print(f"Database tag: sonora-bobcat{metallicity}")

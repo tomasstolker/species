@@ -58,7 +58,7 @@ class ReadIsochrone:
         ----------
         tag : str, None
             Database tag of the isochrone data (e.g. 'ames-cond',
-            'sonora+0.0', 'atmo-ceq'). A list with the isochrone
+            'sonora-bobcat+0.0', 'atmo-ceq'). A list with the isochrone
             data that are stored in the current database is
             printed if the argument of ``tag`` is set to ``None``.
         create_regular_grid : bool
@@ -204,9 +204,9 @@ class ReadIsochrone:
             ),
             "saumon2008-nc_solar": ("saumon2008-clear", None),
             "saumon2008-f2_solar": ("saumon2008-cloudy", None),
-            "sonora-0.5": ("sonora-bobcat", {"feh": -0.5}),
-            "sonora+0.0": ("sonora-bobcat", {"feh": 0.0}),
-            "sonora+0.5": ("sonora-bobcat", {"feh": 0.5}),
+            "sonora-bobcat-0.5": ("sonora-bobcat", {"feh": -0.5}),
+            "sonora-bobcat+0.0": ("sonora-bobcat", {"feh": 0.0}),
+            "sonora-bobcat+0.5": ("sonora-bobcat", {"feh": 0.5}),
             "sonora-diamondback-hybrid-0.5": ("sonora-diamondback", {"feh": -0.5}),
             "sonora-diamondback-hybrid+0.0": ("sonora-diamondback", {"feh": 0.0}),
             "sonora-diamondback-hybrid+0.5": ("sonora-diamondback", {"feh": 0.5}),
