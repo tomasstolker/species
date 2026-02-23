@@ -1,7 +1,7 @@
 .. _faq:
 
-Frequent Asked Questions
-========================
+Frequently Asked Questions
+==========================
 
 What dependency versions should I use?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

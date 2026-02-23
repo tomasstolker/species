@@ -31,10 +31,10 @@ class JsonModelTableDirective(Directive):
         table = nodes.table()
         table["classes"].append("json-model-table")
 
-        tgroup = nodes.tgroup(cols=5)
+        tgroup = nodes.tgroup(cols=6)
         table += tgroup
 
-        for _ in range(5):
+        for _ in range(6):
             tgroup += nodes.colspec(colwidth=1)
 
         thead = nodes.thead()
@@ -50,6 +50,7 @@ class JsonModelTableDirective(Directive):
             r"$\lambda/\Delta\lambda$",
             "Wavelength range",
             "Reference",
+            "Tag"
         ]:
             entry = nodes.entry()
             entry += nodes.paragraph(text=title)
@@ -121,6 +122,11 @@ class JsonModelTableDirective(Directive):
             if reference:
                 ref_entry += nodes.paragraph(text=reference)
             row += ref_entry
+
+            # --- Tag
+            tag_entry = nodes.entry()
+            tag_entry += nodes.paragraph(text=model_key)
+            row += tag_entry
 
             tbody += row
 

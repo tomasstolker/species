@@ -1683,7 +1683,7 @@ class FitModel:
         params,
     ) -> Real:
         """
-        Function for calculating the log-likelihood for the sampled
+        Function for calculating the log-likelihood of the sampled
         parameter cube. The model spectrum will be compared with
         the photometric and spectral fluxes.
 
@@ -2722,8 +2722,8 @@ class FitModel:
         @beartype
         def _lnlike_multinest(params, n_dim: int, n_param: int) -> Real:
             """
-            Function for return the log-likelihood for the
-            sampled parameter cube.
+            Function for returning the log-likelihood of
+            the sampled parameter cube.
 
             Parameters
             ----------
