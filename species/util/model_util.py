@@ -276,6 +276,7 @@ def apply_obs(
     data_wavel: Optional[np.ndarray] = None,
     spec_res: Optional[Real] = None,
     rot_broad: Optional[Real] = None,
+    limb_dark: Optional[Real] = 0.0,
     rad_vel: Optional[Real] = None,
     cross_sections: Optional[RegularGridInterpolator] = None,
     ext_model: Optional[str] = None,
@@ -308,6 +309,11 @@ def apply_obs(
     rot_broad : float, None
         Rotational broadening :math:`v\\sin{i}` (km/s). Not
         applied if the argument is set to ``None``.
+    limb_dark : float
+        Linear limb darkening coefficient in the range of 0.0
+        to 1.0. The default is set to zero such that there
+        is no limb darkening applied. This parameter is only
+        applied in combination with setting ``rot_broad``.
     rad_vel : float, None
         Radial velocity (km/s). Not applied if the argument
         is set to ``None``.
@@ -341,7 +347,7 @@ def apply_obs(
             wavel=model_wavel,
             flux=model_flux,
             vsini=rot_broad,
-            eps=0.0,
+            eps=limb_dark,
         )
 
     # Apply extinction
@@ -509,7 +515,7 @@ def rot_int_cmj(
     """
     A routine to quickly rotationally broaden a spectrum in linear time.
     This function has been adopted from `Carvalho & Johns-Krull (2023)
-    <https://ui.adsabs.harvard.edu/abs/2023RNAAS...7...91C/abstract>`_.
+    <https://ui.adsabs.harvard.edu/abs/2023RNAAS...7...91C>`_.
 
     Parameters
     ----------
@@ -549,6 +555,7 @@ def rot_int_cmj(
 
     for j in range(nr):
         r = dr / 2.0 + j * dr
+
         area = (
             ((r + dr / 2.0) ** 2 - (r - dr / 2.0) ** 2)
             / int(ntheta * r)
@@ -557,24 +564,15 @@ def rot_int_cmj(
 
         for k in range(int(ntheta * r)):
             th = np.pi / int(ntheta * r) + k * 2.0 * np.pi / int(ntheta * r)
+            vl = r * vsini * np.sin(th)
 
             if dif != 0:
-                vl = (
-                    vsini
-                    * r
-                    * np.sin(th)
-                    * (
-                        1.0
-                        - dif / 2.0
-                        - dif / 2.0 * np.cos(2.0 * np.arccos(r * np.cos(th)))
-                    )
-                )
-            else:
-                vl = r * vsini * np.sin(th)
+                vl *= (1.0 - dif / 2.0 - dif / 2.0 * np.cos(2.0 * np.arccos(r * np.cos(th))))
 
             ns += area * np.interp(
                 wavel + wavel * vl / (1e-3 * constants.LIGHT), wavel, flux
             )
+
             tarea += area
 
     return ns / tarea

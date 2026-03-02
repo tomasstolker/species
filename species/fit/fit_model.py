@@ -166,15 +166,21 @@ class FitModel:
                  :func:`~species.data.database.Database.add_object`.
                  The broadening is applied with the function from
                  `Carvalho & Johns-Krull (2023) <https://ui.adsabs.
-                 harvard.edu/abs/2023RNAAS...7...91C/abstract>`_.
-                 A single broadening parameter, ``vsini``, can be
-                 fitted, so it is applied for all spectra. Or, it is
+                 harvard.edu/abs/2023RNAAS...7...91C>`_. A single
+                 broadening parameter, ``vsini``, can be fitted,
+                 so it is applied for all spectra. Or, it is
                  also possible to fit the broadening for individual
                  spectra by for example including the parameter as
                  ``vsini_CRIRES`` in case the spectrum name is
                  ``CRIRES``, that is, the name used as tag when
                  adding the spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
+                 Additionally, the linear limb darkening coefficient,
+                 ``limb_dark``m can be included with a prior range
+                 between 0.0 and 1.0. Without explicitly including
+                 the parameter, no limb darkening is applied.
+                 Similar to ``vsini``, the ``limb_dark`` parameter
+                 can be fitted for individual spectra.
 
                - It is possible to fit a weighted combination of two
                  atmospheric parameters from the same model. This
@@ -1170,7 +1176,7 @@ class FitModel:
 
         # Optional parameters, either global or for each instrument/spectrum
 
-        for param_item in ["vsini", "rad_vel"]:
+        for param_item in ["vsini", "limb_dark", "rad_vel"]:
             if param_item in self.bounds:
                 if self.binary:
                     if isinstance(self.bounds[param_item][0], tuple):
@@ -2218,6 +2224,20 @@ class FitModel:
                     else:
                         rot_broad_0 = None
 
+                    # Set linear limb-darkening coefficient
+
+                    if "limb_dark" in self.modelpar:
+                        limb_dark_0 = params[self.cube_index["limb_dark"]]
+
+                    elif "limb_dark_0" in self.modelpar:
+                        limb_dark_0 = params[self.cube_index["limb_dark_0"]]
+
+                    elif f"limb_dark_{spec_item}_0" in self.modelpar:
+                        limb_dark_0 = params[self.cube_index[f"limb_dark_{spec_item}_0"]]
+
+                    else:
+                        limb_dark_0 = None
+
                     # Set radial velocity
 
                     if "rad_vel" in self.modelpar:
@@ -2242,6 +2262,7 @@ class FitModel:
                         model_param=all_param_0,
                         cross_sections=self.cross_sections,
                         rot_broad=rot_broad_0,
+                        limb_dark=limb_dark_0,
                         rad_vel=rad_vel_0,
                         ext_model=self.ext_model,
                     )
@@ -2268,6 +2289,20 @@ class FitModel:
                     else:
                         rot_broad_1 = None
 
+                    # Set linear limb-darkening coefficient
+
+                    if "limb_dark" in self.modelpar:
+                        limb_dark_1 = params[self.cube_index["limb_dark"]]
+
+                    elif "limb_dark_1" in self.modelpar:
+                        limb_dark_1 = params[self.cube_index["limb_dark_1"]]
+
+                    elif f"limb_dark_{spec_item}_1" in self.modelpar:
+                        limb_dark_1 = params[self.cube_index[f"limb_dark_{spec_item}_1"]]
+
+                    else:
+                        limb_dark_1 = None
+
                     # Set radial velocity
 
                     if "rad_vel" in self.modelpar:
@@ -2292,6 +2327,7 @@ class FitModel:
                         model_param=all_param_1,
                         cross_sections=self.cross_sections,
                         rot_broad=rot_broad_1,
+                        limb_dark=limb_dark_1,
                         rad_vel=rad_vel_1,
                         ext_model=self.ext_model,
                     )
@@ -2320,6 +2356,17 @@ class FitModel:
                     else:
                         rot_broad = None
 
+                    # Set linear limb-darkening coefficient
+
+                    if "limb_dark" in self.modelpar:
+                        limb_dark = params[self.cube_index["limb_dark"]]
+
+                    elif f"limb_dark_{spec_item}" in self.modelpar:
+                        limb_dark = params[self.cube_index[f"limb_dark_{spec_item}"]]
+
+                    else:
+                        limb_dark = None
+
                     # Set radial velocity
 
                     if "rad_vel" in self.modelpar:
@@ -2345,6 +2392,7 @@ class FitModel:
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         cross_sections=self.cross_sections,
                         rot_broad=rot_broad,
+                        limb_dark=limb_dark,
                         rad_vel=rad_vel,
                         ext_model=self.ext_model,
                     )

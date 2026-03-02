@@ -150,6 +150,8 @@ class ReadModel:
             "veil_b",
             "veil_ref",
             "vsini",
+            "limb_dark",
+            "rad_vel",
         ]
 
         for i in range(10):
@@ -486,6 +488,11 @@ class ReadModel:
             boundaries of the spectra in the database can be obtained
             with
             :func:`~species.read.read_model.ReadModel.get_bounds()`.
+            There are additional parameters that can be optionally
+            applied, also by including them as parameters in the
+            ``model_param`` dictionary. An overview of these parameters
+            can be obtained by printing the ``extra_param`` attribute
+            of a ``ReadModel`` object.
         spec_res : float, None
             Spectral resolution that is used for smoothing the spectrum
             with a Gaussian kernel. No smoothing is applied if the
@@ -746,11 +753,16 @@ class ReadModel:
         # Apply rotational broadening vsin(i) in km/s
 
         if "vsini" in model_param:
+            if "limb_dark" in model_param:
+                eps = model_param["limb_dark"]
+            else:
+                eps = 0.0
+
             model_box.flux = rot_int_cmj(
                 wavel=model_box.wavelength,
                 flux=model_box.flux,
                 vsini=model_param["vsini"],
-                eps=0.0,
+                eps=eps,
             )
 
         # Apply veiling
@@ -1026,7 +1038,11 @@ class ReadModel:
         model_param : dict
             Model parameters and values. Only discrete values from the
             original grid are possible. Else, the nearest grid values
-            are selected.
+            are selected. There are additional parameters that can be
+            optionally applied, also by including them as parameters
+            in the ``model_param`` dictionary. An overview of these
+            parameters can be obtained by printing the ``extra_param``
+            attribute of a ``ReadModel`` object.
         spec_res : float, None
             Spectral resolution that is used for smoothing the spectrum
             with a Gaussian kernel. No smoothing is applied to the
@@ -1259,11 +1275,16 @@ class ReadModel:
         # Apply rotational broadening vsin(i) in km/s
 
         if "vsini" in model_param:
+            if "limb_dark" in model_param:
+                eps = model_param["limb_dark"]
+            else:
+                eps = 0.0
+
             model_box.flux = rot_int_cmj(
                 wavel=model_box.wavelength,
                 flux=model_box.flux,
                 vsini=model_param["vsini"],
-                eps=0.0,
+                eps=eps,
             )
 
         # Apply veiling

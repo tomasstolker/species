@@ -356,6 +356,18 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("vsini_1")
         param[index] = r"$v\,\sin\,i_\mathrm{2}$ (km s$^{-1}$)"
 
+    if "limb_dark" in param:
+        index = param.index("limb_dark")
+        param[index] = r"$\epsilon$"
+
+    if "limb_dark_0" in param:
+        index = param.index("limb_dark_0")
+        param[index] = r"$\epsilon_\mathrm{1}$"
+
+    if "limb_dark_1" in param:
+        index = param.index("limb_dark_1")
+        param[index] = r"$\epsilon_\mathrm{2}$"
+
     if "rad_vel" in param:
         index = param.index("rad_vel")
         param[index] = r"$v_\mathrm{r}$ (km s$^{-1}$)"
@@ -798,6 +810,12 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$v\,\sin\,i_\mathrm{{{item_name}}}$ (km s$^{-1}$)"
+
+        elif item[0:10] == "limb_dark_":
+            item_name = item[10:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\epsilon_\mathrm{{{item_name}}}$"
 
         elif item[0:11] == "wavelength_":
             item_name = item[11:]
@@ -1388,6 +1406,11 @@ def quantity_unit(
             unit.append(r"km s$^{-1}$")
             label.append(r"$v\,\sin\,i$")
 
+        elif item == "limb_dark":
+            quantity.append("limb_dark")
+            unit.append(None)
+            label.append(r"$\epsilon$")
+
     return quantity, unit, label
 
 
@@ -1876,6 +1899,7 @@ def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
         "log_flux_scaling",
         "rad_vel",
         "vsini",
+        "limb_dark",
     ]
 
     for param_item in param_add:
