@@ -756,7 +756,9 @@ class ReadModel:
             if "limb_dark" in model_param:
                 eps = model_param["limb_dark"]
             else:
-                eps = 0.0
+                # eps = 0.6 is the default in rot_int_cmj
+                # https://github.com/Adolfo1519/RotBroadInt/blob/main/rotBroadInt.py
+                eps = 0.6
 
             model_box.flux = rot_int_cmj(
                 wavel=model_box.wavelength,
@@ -1278,7 +1280,9 @@ class ReadModel:
             if "limb_dark" in model_param:
                 eps = model_param["limb_dark"]
             else:
-                eps = 0.0
+                # eps = 0.6 is the default in rot_int_cmj
+                # https://github.com/Adolfo1519/RotBroadInt/blob/main/rotBroadInt.py
+                eps = 0.6
 
             model_box.flux = rot_int_cmj(
                 wavel=model_box.wavelength,

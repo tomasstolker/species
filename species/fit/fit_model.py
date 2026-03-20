@@ -176,11 +176,11 @@ class FitModel:
                  adding the spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
                  Additionally, the linear limb darkening coefficient,
-                 ``limb_dark``m can be included with a prior range
+                 ``limb_dark`` can be included with a prior range
                  between 0.0 and 1.0. Without explicitly including
-                 the parameter, no limb darkening is applied.
-                 Similar to ``vsini``, the ``limb_dark`` parameter
-                 can be fitted for individual spectra.
+                 the parameter, otherwise the coefficient is set
+                 to 0.6. Similar to ``vsini``, the ``limb_dark``
+                 parameter can be fitted for individual spectra.
 
                - It is possible to fit a weighted combination of two
                  atmospheric parameters from the same model. This
@@ -578,43 +578,44 @@ class FitModel:
         else:
             self.normal_prior = normal_prior
 
-        # Set default prior range if bounds=None
-
-        readmodel = ReadModel(self.model)
-
-        if self.bounds is None:
-            self.bounds = {}
-
-            param_bounds = readmodel.get_bounds()
-            for param_key, param_value in param_bounds.items():
-                self.bounds[param_key] = param_value
-
-        # Teff range for which the grid will be interpolated
-
-        self.teff_range = readmodel.get_bounds()["teff"]
-
-        if "teff" in self.bounds and self.bounds["teff"] is not None:
-            # List with tuples for blackbody components or
-            # tuple with two tuples for a binary system
-            if isinstance(self.bounds["teff"][0], tuple):
-                teff_min = np.inf
-                teff_max = -np.inf
-
-                for teff_item in self.bounds["teff"]:
-                    if teff_item[0] < teff_min:
-                        teff_min = teff_item[0]
-
-                    if teff_item[1] > teff_max:
-                        teff_max = teff_item[1]
-
-                self.teff_range = (teff_min, teff_max)
-
-            elif self.bounds["teff"][0] != self.bounds["teff"][1]:
-                self.teff_range = self.bounds["teff"]
-
         # Models that do not require a grid interpolation
 
         self.non_interp_model = ["planck", "powerlaw"]
+
+        # Set default prior range if bounds=None
+
+        if self.model not in self.non_interp_model:
+            readmodel = ReadModel(self.model)
+
+            if self.bounds is None:
+                self.bounds = {}
+
+                param_bounds = readmodel.get_bounds()
+                for param_key, param_value in param_bounds.items():
+                    self.bounds[param_key] = param_value
+
+            # Teff range for which the grid will be interpolated
+
+            self.teff_range = readmodel.get_bounds()["teff"]
+
+            if "teff" in self.bounds and self.bounds["teff"] is not None:
+                # List with tuples for blackbody components or
+                # tuple with two tuples for a binary system
+                if isinstance(self.bounds["teff"][0], tuple):
+                    teff_min = np.inf
+                    teff_max = -np.inf
+
+                    for teff_item in self.bounds["teff"]:
+                        if teff_item[0] < teff_min:
+                            teff_min = teff_item[0]
+
+                        if teff_item[1] > teff_max:
+                            teff_max = teff_item[1]
+
+                    self.teff_range = (teff_min, teff_max)
+
+                elif self.bounds["teff"][0] != self.bounds["teff"][1]:
+                    self.teff_range = self.bounds["teff"]
 
         # Check if deprecated ism_ext parameter is used
 

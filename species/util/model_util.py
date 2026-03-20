@@ -276,7 +276,7 @@ def apply_obs(
     data_wavel: Optional[np.ndarray] = None,
     spec_res: Optional[Real] = None,
     rot_broad: Optional[Real] = None,
-    limb_dark: Optional[Real] = 0.0,
+    limb_dark: Optional[Real] = 0.6,
     rad_vel: Optional[Real] = None,
     cross_sections: Optional[RegularGridInterpolator] = None,
     ext_model: Optional[str] = None,
@@ -311,9 +311,8 @@ def apply_obs(
         applied if the argument is set to ``None``.
     limb_dark : float
         Linear limb darkening coefficient in the range of 0.0
-        to 1.0. The default is set to zero such that there
-        is no limb darkening applied. This parameter is only
-        applied in combination with setting ``rot_broad``.
+        to 1.0 (default: 0.6). This parameter is only applied
+        in combination with setting ``rot_broad``.
     rad_vel : float, None
         Radial velocity (km/s). Not applied if the argument
         is set to ``None``.
