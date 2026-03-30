@@ -526,7 +526,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     for i, item in enumerate(ascii_lowercase[1:]):
         if f"s_init_{i}" in param:
-            index = param.index(f"s_i_{i}")
+            index = param.index(f"s_init_{i}")
             param[index] = (
                 rf"$S_\mathrm{{i,{item}}}$ ($k_\mathrm{{B}}/\mathrm{{baryon}}$)"
             )
