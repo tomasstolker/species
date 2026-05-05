@@ -86,10 +86,7 @@ def plot_posterior(
         Axis limits of all parameters. Automatically set if the
         argument is set to ``None``.
     max_prob : bool
-        Plot the position of the sample with the maximum likelihood
-        probability. The sample may need to match with the maximum
-        posterior probability, depending on the use of any normal
-        priors.
+        Plot the position of the sample with the maximum likelihood.
     vmr : bool
         Plot the volume mixing ratios (i.e. number fractions)
         instead of the mass fractions of the retrieved species with

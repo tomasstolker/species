@@ -1793,7 +1793,32 @@ class FitModel:
 
         ln_like = 0.0
 
-        # Add normal priors to the log-likelihood function
+        # Add uniform priors for non-mandatory parameters
+        # to the log-likelihood function
+
+        if "mass" in self.bounds:
+            if "logg" in all_param and "radius" in all_param:
+                mass = logg_to_mass(all_param["logg"], all_param["radius"])
+
+                if (mass < self.bounds["mass"][0]) or (mass > self.bounds["mass"][1]):
+                    return -np.inf
+
+            else:
+                if "logg" not in all_param:
+                    warnings.warn(
+                        "The 'logg' parameter is not used "
+                        f"by the '{self.model}' model so "
+                        "the mass prior cannot be applied."
+                    )
+
+                elif "radius" not in all_param:
+                    warnings.warn(
+                        "The 'radius' parameter is not fitted "
+                        "so the mass prior cannot be applied."
+                    )
+
+        # Add normal priors for non-mandatory parameters
+        # to the log-likelihood function
 
         for prior_key, prior_value in self.normal_prior.items():
             if prior_key == "mass":
