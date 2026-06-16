@@ -28,6 +28,7 @@
         "wavelength range": [0.2, 2000],
         "lambda/d_lambda": 1000,
         "teff range": [200, 3000],
+        "information": "This is an earlier version of the ATMO grid. Identical to atmo-ceq?",
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
         "checksum": "b42581abdde49b45a44e8dc8fd59a0edf56073b54e96e81c787de34242a6511c"
