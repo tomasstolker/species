@@ -13,6 +13,7 @@ import numpy as np
 from beartype import beartype
 from beartype.typing import List, Optional, Union, Tuple
 
+from species.read.read_filter import ReadFilter
 from species.util.convert_util import apparent_to_absolute
 
 
@@ -91,10 +92,10 @@ class ReadObject:
         return filter_list
 
     @beartype
-    def get_photometry(self, filter_name: str) -> np.ndarray:
+    def get_photometry(self, filter_name: str, return_mag: bool = True) -> np.ndarray:
         """
-        Function for reading photometric data of the object
-        for a specified filter name.
+        Function for reading photometric data of the
+        object for a specified filter name.
 
         Parameters
         ----------
@@ -103,12 +104,16 @@ class ReadObject:
             :func:`~species.read.read_object.ReadObject.list_filters`
             method can be used for listing the filter names for
             which photometric data of the object is available.
+        return_mag : bool
+            Return an apparent magnitude (``True``) or flux
+            density (``False``). The default is magnitude.
 
         Returns
         -------
         np.ndarray
-            Apparent magnitude, magnitude error (error),
-            flux (W m-2 um-1), flux error (W m-2 um-1).
+            Apparent magnitude or flux density (W m-2 um-1)
+            and uncertainty. Contains multiple rows if
+            multiple measurements are available.
         """
 
         with h5py.File(self.database, "r") as hdf5_file:
@@ -118,9 +123,15 @@ class ReadObject:
                     f"available with the {filter_name} filter."
                 )
 
-            obj_phot = np.asarray(
+            obj_phot = np.array(
                 hdf5_file[f"objects/{self.object_name}/{filter_name}"]
             )
+
+        if return_mag:
+            obj_phot = obj_phot[:2, ]
+
+        else:
+            obj_phot = obj_phot[2:, ]
 
         return obj_phot
 
@@ -267,7 +278,7 @@ class ReadObject:
                 (obj_phot[0], obj_phot[1]), (obj_distance[0], obj_distance[1])
             )
 
-        elif obj_phot.ndim == 2:
+        else:
             abs_mag = apparent_to_absolute(
                 (obj_phot[0, :], obj_phot[1, :]), (obj_distance[0], obj_distance[1])
             )

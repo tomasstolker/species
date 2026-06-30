@@ -1213,10 +1213,19 @@ class Database:
                 if isinstance(app_mag[mag_item], tuple):
                     n_phot = 1
 
-                    app_mag[mag_item] = (
-                        app_mag[mag_item][0] - 2.5 * np.log10(dered_phot[mag_item]),
-                        app_mag[mag_item][1],
-                    )
+                    if error[mag_item] != 0.0:
+                        app_mag[mag_item] = (
+                            app_mag[mag_item][0] - 2.5 * np.log10(dered_phot[mag_item]),
+                            app_mag[mag_item][1],
+                        )
+
+                    else:
+                        # Upper limit
+                        # The flux measurement is the 1 sigma limit
+
+                        app_mag[mag_item] = (np.nan, np.nan)
+                        error[mag_item] = flux[mag_item].copy()
+                        flux[mag_item] = 0.0
 
                     if verbose:
                         print(f"   - {mag_item}:")
@@ -1241,7 +1250,7 @@ class Database:
                         elif mag_item in deredden:
                             print(f"      - Dereddening A_V: {deredden[mag_item]}")
 
-                    data = np.asarray(
+                    data = np.array(
                         [
                             app_mag[mag_item][0],
                             app_mag[mag_item][1],
@@ -1289,7 +1298,7 @@ class Database:
                         mag_list.append(app_mag_item[0])
                         mag_err_list.append(app_mag_item[1])
 
-                    data = np.asarray(
+                    data = np.array(
                         [mag_list, mag_err_list, flux[mag_item], error[mag_item]]
                     )
 

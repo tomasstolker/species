@@ -496,7 +496,7 @@ class CompareSpectra:
 
         object_flux = {}
         for filter_item in inc_phot:
-            object_flux[filter_item] = read_object.get_photometry(filter_item)[2:]
+            object_flux[filter_item] = read_object.get_photometry(filter_item, return_mag=False)
 
         if scale_spec is None:
             scale_spec = []

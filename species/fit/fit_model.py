@@ -1064,8 +1064,8 @@ class FitModel:
 
             # Store the flux and uncertainty for each filter
 
-            obj_phot = self.object.get_photometry(filter_item)
-            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
+            obj_phot = self.object.get_photometry(filter_item, return_mag=False)
+            self.objphot.append(np.array([obj_phot[0], obj_phot[1]]))
 
             self.filter_name.append(filter_item)
             self.instr_name.append(instr_filt)

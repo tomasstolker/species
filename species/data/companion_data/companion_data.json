@@ -228,6 +228,61 @@
             "Nowak et al. 2020"
         ]
     },
+    "beta Pic d": {
+        "simbad": "beta Pic",
+        "gaia_dr3": 4792774797545800832,
+        "parallax": [
+            50.9307,
+            0.1482
+        ],
+        "app_mag": {
+            "Paranal/ERIS.Lp": [
+                15.57,
+                0.16
+            ],
+            "JWST/NIRCAM.F410M": [
+                15.2,
+                0.2
+            ],
+            "JWST/NIRCAM.F444W": [
+                14.7,
+                0.2
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                17.6,
+                0.7
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                17.1,
+                0.6
+            ]
+        },
+        "semi_major": [
+            24.0,
+            -5.0,
+            8.0
+        ],
+        "mass_star": [
+            1.83,
+            0.04
+        ],
+        "mass_companion": [
+            8.3,
+            1.1
+        ],
+        "accretion": false,
+        "age": [
+            18.5,
+            -2.4,
+            2.0
+        ],
+        "references": [
+            "Gaia Early Data Release 3",
+            "Miret-Roig et al. 2020",
+            "Sutlieff et al. 2026",
+            "Gibbs et al. 2026"
+        ]
+    },
     "HIP 65426 b": {
         "simbad": "HIP 65426",
         "gaia_dr3": 6070080754075553792,

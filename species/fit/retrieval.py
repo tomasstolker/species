@@ -307,10 +307,10 @@ class AtmosphericRetrieval:
             print("\nPhotometry:")
 
         for item in inc_phot:
-            obj_phot = self.object.get_photometry(item)
-            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
+            obj_phot = self.object.get_photometry(item, return_mag=False)
+            self.objphot.append(np.array([obj_phot[0], obj_phot[1]]))
 
-            print(f"   - {item} (W m-2 um-1) = {obj_phot[2]:.2e} +/- {obj_phot[3]:.2e}")
+            print(f"   - {item} (W m-2 um-1) = {obj_phot[0]:.2e} +/- {obj_phot[1]:.2e}")
 
             self.synphot.append(SyntheticPhotometry(item))
 

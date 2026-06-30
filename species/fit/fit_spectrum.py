@@ -148,8 +148,8 @@ class FitSpectrum:
             spec_phot = synphot.spectrum_to_flux(calibspec.wavelength, calibspec.flux)
             self.specphot.append(spec_phot[0])
 
-            obj_phot = self.object.get_photometry(item)
-            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
+            obj_phot = self.object.get_photometry(item, return_mag=False)
+            self.objphot.append(np.array([obj_phot[0], obj_phot[1]]))
 
         self.modelpar = ["scaling"]
 

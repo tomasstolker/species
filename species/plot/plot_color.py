@@ -369,7 +369,7 @@ def plot_color_magnitude(
                     label += f", [M/H] = {metal}"
 
                 if hasattr(item, "age"):
-                    label += f" ({Decimal(item.age).normalize()} Myr)"
+                    label += f" ({item.age:g} Myr)"
 
                 if item.library == "zhu2015":
                     ax1.plot(
@@ -790,10 +790,10 @@ def plot_color_magnitude(
 
     if objects is not None:
         for i, item in enumerate(objects):
-            objdata = ReadObject(item[0])
+            obj_data = ReadObject(item[0])
 
-            objcolor1 = objdata.get_photometry(item[1])
-            objcolor2 = objdata.get_photometry(item[2])
+            objcolor1 = obj_data.get_photometry(item[1], return_mag=True)
+            objcolor2 = obj_data.get_photometry(item[2], return_mag=True)
 
             if objcolor1.ndim == 2:
                 print(
@@ -813,7 +813,7 @@ def plot_color_magnitude(
                 )
                 objcolor2 = objcolor2[:, 0]
 
-            abs_mag, abs_err = objdata.get_absmag(item[3])
+            abs_mag, abs_err = obj_data.get_absmag(item[3])
 
             if isinstance(abs_mag, np.ndarray):
                 abs_mag = abs_mag[0]
@@ -870,7 +870,7 @@ def plot_color_magnitude(
                     }
 
                 ax1.annotate(
-                    objdata.object_name,
+                    obj_data.object_name,
                     (x_color, abs_mag),
                     zorder=3,
                     textcoords="offset points",
@@ -1677,12 +1677,12 @@ def plot_color_color(
 
     if objects is not None:
         for i, item in enumerate(objects):
-            objdata = ReadObject(item[0])
+            obj_data = ReadObject(item[0])
 
-            objphot1 = objdata.get_photometry(item[1][0])
-            objphot2 = objdata.get_photometry(item[1][1])
-            objphot3 = objdata.get_photometry(item[2][0])
-            objphot4 = objdata.get_photometry(item[2][1])
+            objphot1 = obj_data.get_photometry(item[1][0], return_mag=True)
+            objphot2 = obj_data.get_photometry(item[1][1], return_mag=True)
+            objphot3 = obj_data.get_photometry(item[2][0], return_mag=True)
+            objphot4 = obj_data.get_photometry(item[2][1], return_mag=True)
 
             if objphot1.ndim == 2:
                 print(
@@ -1759,7 +1759,7 @@ def plot_color_color(
                     }
 
                 ax1.annotate(
-                    objdata.object_name,
+                    obj_data.object_name,
                     (color1, color2),
                     zorder=3,
                     textcoords="offset points",

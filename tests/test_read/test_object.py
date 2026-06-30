@@ -43,16 +43,18 @@ class TestObject:
 
     def test_get_photometry(self):
         read_object = ReadObject("beta Pic b")
-        photometry = read_object.get_photometry("Paranal/NACO.Lp")
 
+        photometry = read_object.get_photometry("Paranal/NACO.Lp", return_mag=True)
         assert isinstance(photometry, np.ndarray)
-
         assert photometry[0] == pytest.approx(11.3, rel=self.limit, abs=0.0)
         assert photometry[1] == pytest.approx(0.06, rel=self.limit, abs=0.0)
-        assert photometry[2] == pytest.approx(
+
+        photometry = read_object.get_photometry("Paranal/NACO.Lp", return_mag=False)
+        assert isinstance(photometry, np.ndarray)
+        assert photometry[0] == pytest.approx(
             1.5566122192562612e-15, rel=self.limit, abs=0.0
         )
-        assert photometry[3] == pytest.approx(
+        assert photometry[1] == pytest.approx(
             8.606536033479756e-17, rel=self.limit, abs=0.0
         )
 
