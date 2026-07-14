@@ -967,6 +967,10 @@ class Database:
             in a list, for example ``{'Paranal/NACO.Lp': [(15., 0.2),
             (14.5, 0.5)], 'Paranal/NACO.Mp': (13., 0.3)}``. No
             photometry is stored if the argument is set to ``None``.
+            Including an upper limit is done by setting the 1 sigma
+            upper limit as the magnitude and the magnitude uncertainty
+            to zero. Internally, this is converted to a flux of zero
+            and an uncertainty given by the upper limit.
         flux_density : dict, None
             Dictionary with filter names, flux densities (W m-2 um-1),
             and uncertainties (W m-1 um-1), or setting the ``units``

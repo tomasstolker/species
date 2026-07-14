@@ -254,6 +254,39 @@
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
         "checksum": "fa4e4355859c09d68a5094c142e3c2a4e41476c4d65ed733d8f3ae7d30ab2003"
     },
+    "exo-rem-k26-lowres-cloudless": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "Exo-REM k26 (cloudless)",
+        "file size": "550 MB",
+        "wavelength range": [0.34, 250.0],
+        "lambda/d_lambda": 500,
+        "teff range": [200, 1950],
+        "reference": "Radcliffe et al. (2026)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2026arXiv260529070R",
+        "checksum": "bd82c0a1159775c2d7791d3bd548063246d98e62d713cf88ebdec64becd43a03"
+    },
+    "exo-rem-k26-lowres-cloudy-fsed": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "fsed"],
+        "name": "Exo-REM k26 (cloudy)",
+        "file size": "4.7 GB",
+        "wavelength range": [0.34, 250.0],
+        "lambda/d_lambda": 500,
+        "teff range": [200, 1950],
+        "reference": "Radcliffe et al. (2026)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2026arXiv260529070R",
+        "checksum": "cf389de14e9394a776cb97a47ba32253f025d4abb481871381e20644192bea68"
+    },
+    "exo-rem-k26-lowres-cloudy-physics": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "Exo-REM k26 (cloudy physics)",
+        "file size": "542 MB",
+        "wavelength range": [0.34, 250.0],
+        "lambda/d_lambda": 500,
+        "teff range": [200, 1950],
+        "reference": "Radcliffe et al. (2026)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2026arXiv260529070R",
+        "checksum": "433ce2b5dd150057e1a65027d8d975b2f7ab3f8431514571153a2a96cc4c39d3"
+    },
     "koester-wd": {
         "parameters": ["teff", "logg"],
         "name": "Koester WD",
