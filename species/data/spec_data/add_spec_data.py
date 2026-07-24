@@ -9,6 +9,7 @@ from beartype.typing import List, Optional
 
 from species.data.spec_data.spec_allers2013 import add_allers2013
 from species.data.spec_data.spec_bonnefoy2014 import add_bonnefoy2014
+from species.data.spec_data.spec_gagne2026 import add_gagne2026, add_gagnetemplates2026
 from species.data.spec_data.spec_irtf import add_irtf
 from species.data.spec_data.spec_kesseli2017 import add_kesseli2017
 from species.data.spec_data.spec_spex import add_spex
@@ -33,7 +34,7 @@ def add_spec_library(
         Database.
     spec_library : str
         Name of the spectral library ('irtf', 'spex', 'kesseli+2017',
-        'bonnefoy+2014', 'allers+2013').
+        'gagne+2026', 'bonnefoy+2014', 'allers+2013').
     sptypes : list(str), None
         Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently
         only implemented for ``spec_library='irtf'``.
@@ -49,6 +50,12 @@ def add_spec_library(
 
     elif spec_library[0:13] == "bonnefoy+2014":
         add_bonnefoy2014(input_path, database)
+
+    elif spec_library[0:10] == "gagne+2026":
+                add_gagne2026(input_path, database)
+
+    elif spec_library[0:20] == "gagne-templates+2026":
+                add_gagnetemplates2026(input_path, database)
 
     elif spec_library[0:5] == "irtf":
         add_irtf(input_path, database, sptypes)
