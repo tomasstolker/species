@@ -83,7 +83,6 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
     print()
 
     for file_item in spec_files:
-        
 
         data = pd.read_csv(file_item)
 
@@ -92,7 +91,6 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
 
                 spec_value["SPIFF"] = data.dropna().to_numpy(dtype=float)
 
-    
     for spec_key, spec_value in spec_dict.items():
         empty_message = len(print_message) * " "
         print(f"\r{empty_message}", end="")
@@ -103,9 +101,7 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
         if "SPIFF" in spec_value:
             sp_data = spec_value["SPIFF"]
 
-        dset = database.create_dataset(
-            f"spectra/gagne+2026/{spec_key}", data=sp_data
-        )
+        dset = database.create_dataset(f"spectra/gagne+2026/{spec_key}", data=sp_data)
 
         dset.attrs["name"] = str(spec_key).encode()
         dset.attrs["sptype"] = str(spec_value["sptype"]).encode()
@@ -116,11 +112,12 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
     print_message = "Adding spectra... [DONE]"
     print(f"\r{print_message}")
 
+
 @beartype
 def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding 1-6 micron SPHEREx templates of BDs combined from individual SPIFF spectra from
-    `Gagne et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G/abstract>`_ to the database. In particular, uses the "raw" spectral templates. 
+    `Gagne et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G/abstract>`_ to the database. In particular, uses the "raw" spectral templates.
 
     Parameters
     ----------
@@ -170,7 +167,9 @@ def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> No
     spec_files = sorted(data_folder.glob("*"))
 
     for line in spec_files:
-        name = "TEMPLATE_"+str(line).split("_raw_")[0].split("gagne-templates+2026/")[-1]
+        name = (
+            "TEMPLATE_" + str(line).split("_raw_")[0].split("gagne-templates+2026/")[-1]
+        )
         files = str(line)
         sptype = str(line).split("_raw_")[0].split("gagne-templates+2026/")[-1]
 
@@ -180,7 +179,6 @@ def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> No
     print()
 
     for file_item in spec_files:
-        
 
         data = pd.read_csv(file_item)
 
@@ -189,7 +187,6 @@ def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> No
 
                 spec_value["SPIFF-TEMPLATE"] = data.dropna().to_numpy(dtype=float)
 
-    
     for spec_key, spec_value in spec_dict.items():
         empty_message = len(print_message) * " "
         print(f"\r{empty_message}", end="")

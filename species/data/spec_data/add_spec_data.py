@@ -52,10 +52,10 @@ def add_spec_library(
         add_bonnefoy2014(input_path, database)
 
     elif spec_library[0:10] == "gagne+2026":
-                add_gagne2026(input_path, database)
+        add_gagne2026(input_path, database)
 
     elif spec_library[0:20] == "gagne-templates+2026":
-                add_gagnetemplates2026(input_path, database)
+        add_gagnetemplates2026(input_path, database)
 
     elif spec_library[0:5] == "irtf":
         add_irtf(input_path, database, sptypes)
