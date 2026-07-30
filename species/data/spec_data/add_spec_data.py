@@ -33,8 +33,9 @@ def add_spec_library(
     database : h5py._hl.files.File
         Database.
     spec_library : str
-        Name of the spectral library ('irtf', 'spex', 'kesseli+2017',
-        'gagne+2026', 'bonnefoy+2014', 'allers+2013').
+        Name of the spectral library ('irtf', 'spex',
+        'kesseli+2017', 'bonnefoy+2014', 'allers+2013',
+        'gagne+2026', 'gagne-templates+2026').
     sptypes : list(str), None
         Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently
         only implemented for ``spec_library='irtf'``.

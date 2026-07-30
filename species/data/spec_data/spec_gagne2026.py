@@ -1,29 +1,35 @@
 """
-Module for adding 1-6 micron SPHEREx spectra of BDs dervied using SPIFF from
-`Gagne et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G/abstract>`_ to the database. In particular, utilizes only the binned, knwon UCD sample (2304 objects).
+Module for adding the 1–6 μm SPHEREx spectra of ultracool dwarfs (UCDs)
+derived with SPIFF from `Gagné et al. (2026)
+<https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G>`_ to the
+database. Contains a function that adds the 2,304 binned spectra
+and a function that adds 44 spectral templates.
 """
 
 import os
-import gzip
-from zipfile import ZipFile
+import re
+
 from pathlib import Path
+from zipfile import ZipFile
 
 import h5py
 import numpy as np
 import pandas as pd
 import pooch
 
-from astropy.io import fits
 from beartype import beartype
+from mocapy import MocaEngine
 
-from species.util.data_util import extract_tarfile, remove_directory
+from species.util.data_util import remove_directory
 
 
 @beartype
 def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding 1-6 micron SPHEREx spectra of BDs dervied using SPIFF from
-    `Gagne et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G/abstract>`_ to the database. In particular, utilizes only the binned, knwon UCD sample (2304 objects)
+    Function for adding the 1–6 μm SPHEREx spectra of ultracool dwarfs (UCDs)
+    derived with SPIFF from `Gagné et al. (2026)
+    <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G>`_ to the
+    database. The function imports the binned spectra if the 2,304 objects.
 
     Parameters
     ----------
@@ -38,7 +44,7 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
         None
     """
 
-    print_text = "SPHEREx SPIFF spectra of ultra cool dwarfs from Gagne et al. 2026"
+    print_text = "SPHEREx SPIFF spectra of UCDs from Gagne et al. 2026"
 
     url = "https://zenodo.org/records/19051216/files/spiff_known_bds_binned_csv.zip"
     input_file = "spiff_known_bds_binned_csv.zip"
@@ -50,7 +56,7 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash=None,
+            known_hash="d8d16ee156074a1ade74cdd9c024e0119347eb11781e83b849680001f1e916ec",
             fname=input_file,
             path=input_path,
             progressbar=True,
@@ -59,52 +65,90 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
     if data_folder.exists():
         remove_directory(data_folder)
 
-    print(f"\nUnpacking {print_text} (2.3 MB)...", end="", flush=True)
-    with ZipFile(data_file) as zip:
-        for zip_info in zip.infolist():
+    print(f"\nUnpacking {print_text} (7.2 MB)...", end="", flush=True)
+
+    with ZipFile(data_file) as zip_file:
+        for zip_info in zip_file.infolist():
             if zip_info.is_dir():
                 continue
+
             zip_info.filename = os.path.basename(zip_info.filename)
-            zip.extract(zip_info, data_folder)
+            zip_file.extract(zip_info, data_folder)
+
     print(" [DONE]")
 
-    spec_dict = {}
+    spec_files = sorted(data_folder.glob("*.csv"))
 
-    spec_files = sorted(data_folder.glob("*"))
+    moca_oid_list = []
 
-    for line in spec_files:
-        name = str(line).split("_moca_")[0].split("gagne+2026/")[-1]
-        files = str(line)
-        sptype = str(line).split("_spt_")[-1].replace("_spherex_spectrum.csv", "")
+    for file_item in spec_files:
+        match = re.match(
+            r"(?P<name>.+)_moca_oid_(?P<moca_oid>\d+)"
+            r"_spt_(?P<sptype>.+?)_spherex_spectrum\.csv$",
+            file_item.name,
+        )
 
-        spec_dict[name] = {"name": name, "sptype": sptype, "files": files}
+        name = match["name"]
+        moca_oid = match["moca_oid"]
+        sptype = match["sptype"]
+        moca_oid_list.append(moca_oid)
+
+    print("\nQuerying parallaxes in MOCAdb...", end="", flush=True)
+
+    moca = MocaEngine()
+
+    mocadb_query = f"""
+    SELECT
+        moca_oid,
+        parallax_mas
+    FROM
+        summary_all_members
+    WHERE
+        moca_oid IN ({", ".join(map(str, moca_oid_list))});
+    """
+
+    df = moca.query(mocadb_query)
+
+    print(" [DONE]")
 
     print_message = ""
     print()
 
     for file_item in spec_files:
+        match = re.match(
+            r"(?P<name>.+)_moca_oid_(?P<moca_oid>\d+)"
+            r"_spt_(?P<sptype>.+?)_spherex_spectrum\.csv$",
+            file_item.name,
+        )
+
+        name = match["name"]
+        moca_oid = match["moca_oid"]
+        sptype = match["sptype"]
+
+        parallax = df["parallax_mas"][df["moca_oid"] == int(moca_oid)]
+
+        if len(parallax) == 0:
+            parallax = np.nan
+        else:
+            parallax = parallax.iloc[0]
 
         data = pd.read_csv(file_item)
 
-        for spec_key, spec_value in spec_dict.items():
-            if file_item.name in spec_value["files"]:
-
-                spec_value["SPIFF"] = data.dropna().to_numpy(dtype=float)
-
-    for spec_key, spec_value in spec_dict.items():
         empty_message = len(print_message) * " "
         print(f"\r{empty_message}", end="")
 
-        print_message = f"Adding spectra... {spec_key}"
+        print_message = f"Adding spectra... {name}"
         print(f"\r{print_message}", end="")
 
-        if "SPIFF" in spec_value:
-            sp_data = spec_value["SPIFF"]
+        data = data.dropna().to_numpy(dtype=float)
+        dset = database.create_dataset(f"spectra/gagne+2026/{name}", data=data)
 
-        dset = database.create_dataset(f"spectra/gagne+2026/{spec_key}", data=sp_data)
-
-        dset.attrs["name"] = str(spec_key).encode()
-        dset.attrs["sptype"] = str(spec_value["sptype"]).encode()
+        dset.attrs["name"] = name.encode()
+        dset.attrs["sptype"] = sptype.encode()
+        dset.attrs["moca_oid"] = moca_oid.encode()
+        dset.attrs["file_name"] = file_item.name.encode()
+        dset.attrs["parallax"] = parallax
+        dset.attrs["parallax_error"] = np.nan
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")
@@ -116,8 +160,11 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
 @beartype
 def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding 1-6 micron SPHEREx templates of BDs combined from individual SPIFF spectra from
-    `Gagne et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G/abstract>`_ to the database. In particular, uses the "raw" spectral templates.
+    Function for adding the 1–6 μm SPHEREx spectral templates of
+    ultracool dwarfs (UCDs) constructed by combining individual
+    SPIFF spectra from `Gagné et al. (2026)
+    <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G>`_ to
+    the database. The function imports the 44 "raw" spectral templates.
 
     Parameters
     ----------
@@ -132,10 +179,10 @@ def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> No
         None
     """
 
-    print_text = "SPHEREx SPIFF templates of ultra cool dwarfs from Gagne et al. 2026"
+    print_text = "SPHEREx SPIFF templates of UCDs from Gagne et al. 2026"
 
     url = "https://zenodo.org/records/19051216/files/spiff_templates_raw_csv.zip"
-    input_file = "spiff_template_sptypes.zip"
+    input_file = "spiff_templates_raw_csv.zip"
     data_file = Path(input_path) / input_file
     data_folder = Path(input_path) / "gagne-templates+2026/"
 
@@ -144,7 +191,7 @@ def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> No
 
         pooch.retrieve(
             url=url,
-            known_hash=None,
+            known_hash="342bcef7d550acdacb4835491c1bf1ca4f2a9fbcce3d397bc681719e0ad94e9f",
             fname=input_file,
             path=input_path,
             progressbar=True,
@@ -153,56 +200,47 @@ def add_gagnetemplates2026(input_path: str, database: h5py._hl.files.File) -> No
     if data_folder.exists():
         remove_directory(data_folder)
 
-    print(f"\nUnpacking {print_text} (2.3 MB)...", end="", flush=True)
-    with ZipFile(data_file) as zip:
-        for zip_info in zip.infolist():
+    print(f"\nUnpacking {print_text} (75 kB)...", end="", flush=True)
+
+    with ZipFile(data_file) as zip_file:
+        for zip_info in zip_file.infolist():
             if zip_info.is_dir():
                 continue
+
             zip_info.filename = os.path.basename(zip_info.filename)
-            zip.extract(zip_info, data_folder)
+            zip_file.extract(zip_info, data_folder)
+
     print(" [DONE]")
 
-    spec_dict = {}
-
-    spec_files = sorted(data_folder.glob("*"))
-
-    for line in spec_files:
-        name = (
-            "TEMPLATE_" + str(line).split("_raw_")[0].split("gagne-templates+2026/")[-1]
-        )
-        files = str(line)
-        sptype = str(line).split("_raw_")[0].split("gagne-templates+2026/")[-1]
-
-        spec_dict[name] = {"name": name, "sptype": sptype, "files": files}
+    spec_files = sorted(data_folder.glob("*_raw_*.csv"))
 
     print_message = ""
     print()
 
     for file_item in spec_files:
+        match = re.match(r"(?P<sptype>.+?)_raw_.*\.csv$", file_item.name)
+
+        sptype = match["sptype"]
+        name = f"{sptype} template"
 
         data = pd.read_csv(file_item)
 
-        for spec_key, spec_value in spec_dict.items():
-            if file_item.name in spec_value["files"]:
-
-                spec_value["SPIFF-TEMPLATE"] = data.dropna().to_numpy(dtype=float)
-
-    for spec_key, spec_value in spec_dict.items():
         empty_message = len(print_message) * " "
         print(f"\r{empty_message}", end="")
 
-        print_message = f"Adding spectra... {spec_key}"
+        print_message = f"Adding spectra... {name}"
         print(f"\r{print_message}", end="")
 
-        if "SPIFF-TEMPLATE" in spec_value:
-            sp_data = spec_value["SPIFF-TEMPLATE"]
+        data = data.dropna().to_numpy(dtype=float)
 
         dset = database.create_dataset(
-            f"spectra/gagne-templates+2026/{spec_key}", data=sp_data
+            f"spectra/gagne-templates+2026/{name}",
+            data=data,
         )
 
-        dset.attrs["name"] = str(spec_key).encode()
-        dset.attrs["sptype"] = str(spec_value["sptype"]).encode()
+        dset.attrs["name"] = name.encode()
+        dset.attrs["sptype"] = sptype.encode()
+        dset.attrs["file_name"] = file_item.name.encode()
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")

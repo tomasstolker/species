@@ -29,12 +29,12 @@ Atmospheric models
 Evolutionary models
 -------------------
 
-- `AMES-Cond isochrones <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..701B/abstract>`_
-- `AMES-Dusty isochrones <https://ui.adsabs.harvard.edu/abs/2000ApJ...542..464C/abstract>`_
-- `ATMO isochrones <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_ (CEQ, NEQ weak, NEQ strong)
+- `AMES-Cond isochrones <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..701B>`_
+- `AMES-Dusty isochrones <https://ui.adsabs.harvard.edu/abs/2000ApJ...542..464C>`_
+- `ATMO isochrones <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P>`_ (CEQ, NEQ weak, NEQ strong)
 - `Baraffe et al. (2015) isochrones <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
-- `Linder et al. (2019) isochrones <https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract>`_
-- `Saumon & Marley (2008) isochrones <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+- `Linder et al. (2019) isochrones <https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L>`_
+- `Saumon & Marley (2008) isochrones <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S>`_
 - `Sonora Bobcat isochrones <https://zenodo.org/record/5063476>`_
 - `Sonora Diamondback isochrones <https://zenodo.org/records/12735103>`_
 - `PARSEC isochrones <https://stev.oapd.inaf.it/cgi-bin/cmd>`_
@@ -45,9 +45,10 @@ Spectral libraries
 
 - `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
 - `SpeX Prism Spectral Libraries <http://pono.ucsd.edu/~adam/browndwarfs/spexprism/index_old.html>`_
-- `SDSS spectra by Kesseli et al. (2017) <https://ui.adsabs.harvard.edu/abs/2017ApJS..230...16K/abstract>`_
-- NIR spectra of young M/L dwarfs by `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A/abstract>`_
-- NIR spectra of young M/L dwarfs by `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B/abstract>`_
+- `SDSS spectra by Kesseli et al. (2017) <https://ui.adsabs.harvard.edu/abs/2017ApJS..230...16K>`_
+- NIR spectra of young M/L dwarfs by `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A>`_
+- NIR spectra of young M/L dwarfs by `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B>`_
+- SPHEREx spectra of ultracool dwarfs by `Gagné et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260422012G>`_
 - `Spectra of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data/companion_spectra.json>`_
 
 Photometric libraries
@@ -69,4 +70,4 @@ Dust extinction
 
 - Extinction models from `dust-extinction <https://dust-extinction.readthedocs.io/en/latest/dust_extinction/choose_model.html>`_
 - Dust cross sections computed with `PyMieScatt <https://pymiescatt.readthedocs.io>`_
-- Optical constants from `Mollière et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_
+- Optical constants from `Mollière et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M>`_

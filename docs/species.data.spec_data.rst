@@ -28,6 +28,14 @@ species.data.spec\_data.spec\_bonnefoy2014 module
    :show-inheritance:
    :undoc-members:
 
+species.data.spec\_data.spec\_gagne2026 module
+----------------------------------------------
+
+.. automodule:: species.data.spec_data.spec_gagne2026
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 species.data.spec\_data.spec\_irtf module
 -----------------------------------------
 

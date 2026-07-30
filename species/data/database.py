@@ -2246,7 +2246,8 @@ class Database:
         ----------
         spec_library : str
             Spectral library ('irtf', 'spex', 'kesseli+2017',
-            'bonnefoy+2014', 'allers+2013').
+            'bonnefoy+2014', 'allers+2013', 'gagne+2026',
+            'gagne-templates+2026').
         sptypes : list(str)
             Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently
             only implemented for ``spec_library='irtf'``.
