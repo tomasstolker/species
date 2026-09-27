@@ -4,6 +4,7 @@ Module for adding a custom grid of model spectra to the database.
 
 import warnings
 
+from numbers import Real
 from pathlib import Path
 
 import h5py
@@ -27,11 +28,11 @@ def add_custom_model_grid(
     data_path: Union[str, Path],
     parameters: List[str],
     database: h5py._hl.files.File,
-    wavel_range: Optional[Tuple[float, float]],
-    teff_range: Optional[Tuple[float, float]],
-    wavel_sampling: Optional[float],
-    fit_from: Optional[float] = None,
-    extend_from: Optional[float] = None,
+    wavel_range: Optional[Tuple[Real, Real]],
+    teff_range: Optional[Tuple[Real, Real]],
+    wavel_sampling: Optional[Real],
+    fit_from: Optional[Real] = None,
+    extend_from: Optional[Real] = None,
 ) -> None:
     """
     Function for adding a custom grid of model spectra to the

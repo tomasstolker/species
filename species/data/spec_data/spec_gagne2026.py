@@ -18,7 +18,6 @@ import pandas as pd
 import pooch
 
 from beartype import beartype
-from mocapy import MocaEngine
 
 from species.util.data_util import remove_directory
 
@@ -94,6 +93,8 @@ def add_gagne2026(input_path: str, database: h5py._hl.files.File) -> None:
         moca_oid_list.append(moca_oid)
 
     print("\nQuerying parallaxes in MOCAdb...", end="", flush=True)
+
+    from mocapy import MocaEngine
 
     moca = MocaEngine()
 

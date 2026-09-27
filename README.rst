@@ -5,7 +5,8 @@
 
 .. container::
 
-    |PyPI Status| |Python Versions| |CI Status| |Docs Status| |Code Coverage| |Code Quality| |License|
+    | |PyPI Status| |GitHub Release| |Python Versions| |CI Status| |Docs Status|
+    | |License| |Code Coverage| |Code Quality|
 
 *species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources.
 
@@ -46,17 +47,20 @@ Copyright 2026 Tomas Stolker and `contributors <https://github.com/tomasstolker/
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/species
    :target: https://pypi.python.org/pypi/species
 
+.. |GitHub Release| image:: https://img.shields.io/github/v/release/tomasstolker/species
+   :target: https://github.com/tomasstolker/species/releases
+
 .. |CI Status| image:: https://github.com/tomasstolker/species/actions/workflows/main.yml/badge.svg?branch=main
    :target: https://github.com/tomasstolker/species/actions/workflows/main.yml
 
 .. |Docs Status| image:: https://img.shields.io/readthedocs/species
    :target: http://species.readthedocs.io
 
+.. |License| image:: https://img.shields.io/github/license/tomasstolker/species
+   :target: https://github.com/tomasstolker/species/blob/main/LICENSE
+
 .. |Code Coverage| image:: https://codecov.io/gh/tomasstolker/species/branch/main/graph/badge.svg?token=LSSCPMJ5JH
    :target: https://codecov.io/gh/tomasstolker/species
 
 .. |Code Quality| image:: https://img.shields.io/codefactor/grade/github/tomasstolker/species
    :target: https://www.codefactor.io/repository/github/tomasstolker/species
-
-.. |License| image:: https://img.shields.io/github/license/tomasstolker/species
-   :target: https://github.com/tomasstolker/species/blob/main/LICENSE

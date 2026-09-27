@@ -48,7 +48,6 @@ full = [
     "SQLAlchemy",
     "ultranest",
     "xlrd",
-    "mocapy @ git+https://github.com/jgagneastro/mocapy.git",
 ]
 docs = [
     "cython",
@@ -57,7 +56,7 @@ docs = [
     "pandoc",
     "sphinx",
     "sphinx-automodapi",
-    "sphinxawesome-theme @ git+https://github.com/kai687/sphinxawesome-theme.git",
+    "sphinxawesome-theme",
 ]
 test = [
     "black",

@@ -262,7 +262,7 @@
         "lambda/d_lambda": 500,
         "teff range": [200, 1950],
         "reference": "Radcliffe et al. (2026)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2026arXiv260529070R",
+        "url": "https://ui.adsabs.harvard.edu/abs/2026A%26A...711A.257R",
         "checksum": "bd82c0a1159775c2d7791d3bd548063246d98e62d713cf88ebdec64becd43a03"
     },
     "exo-rem-k26-lowres-cloudy-fsed": {
@@ -273,7 +273,7 @@
         "lambda/d_lambda": 500,
         "teff range": [200, 1950],
         "reference": "Radcliffe et al. (2026)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2026arXiv260529070R",
+        "url": "https://ui.adsabs.harvard.edu/abs/2026A%26A...711A.257R",
         "checksum": "cf389de14e9394a776cb97a47ba32253f025d4abb481871381e20644192bea68"
     },
     "exo-rem-k26-lowres-cloudy-physics": {
@@ -284,7 +284,7 @@
         "lambda/d_lambda": 500,
         "teff range": [200, 1950],
         "reference": "Radcliffe et al. (2026)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2026arXiv260529070R",
+        "url": "https://ui.adsabs.harvard.edu/abs/2026A%26A...711A.257R",
         "checksum": "433ce2b5dd150057e1a65027d8d975b2f7ab3f8431514571153a2a96cc4c39d3"
     },
     "koester-wd": {

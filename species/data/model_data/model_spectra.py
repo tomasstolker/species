@@ -7,6 +7,7 @@ import json
 import tarfile
 import warnings
 
+from numbers import Real
 from pathlib import Path
 
 import h5py
@@ -30,12 +31,12 @@ def add_model_grid(
     model_tag: str,
     input_path: str,
     database: h5py._hl.files.File,
-    wavel_range: Optional[Tuple[float, float]] = None,
-    teff_range: Optional[Tuple[float, float]] = None,
-    wavel_sampling: Optional[float] = None,
+    wavel_range: Optional[Tuple[Real, Real]] = None,
+    teff_range: Optional[Tuple[Real, Real]] = None,
+    wavel_sampling: Optional[Real] = None,
     unpack_tar: bool = True,
-    fit_from: Optional[float] = None,
-    extend_from: Optional[float] = None,
+    fit_from: Optional[Real] = None,
+    extend_from: Optional[Real] = None,
 ) -> None:
     """
     Function for adding a grid of model spectra to the database.
