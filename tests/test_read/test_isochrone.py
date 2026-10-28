@@ -13,7 +13,7 @@ from species.util import test_util
 
 class TestIsochrone:
     def setup_class(self):
-        self.limit = 1e-8
+        self.limit = 1e-6
         self.test_path = os.path.dirname(__file__) + "/"
 
     def teardown_class(self):

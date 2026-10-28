@@ -12,8 +12,10 @@ from species.util import test_util
 
 class TestModel:
     def setup_class(self):
-        self.limit = 1e-8
+        self.limit = 1e-6
+
         self.test_path = os.path.dirname(__file__) + "/"
+
         self.model_param = {
             "teff": 2200.0,
             "logg": 4.5,

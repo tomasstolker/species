@@ -56,8 +56,8 @@ Copyright 2026 Tomas Stolker and `contributors <https://github.com/tomasstolker/
 .. |Docs Status| image:: https://img.shields.io/readthedocs/species
    :target: http://species.readthedocs.io
 
-.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.22991979.svg
-   :target: https://doi.org/10.5281/zenodo.22991979
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.22991978.svg
+   :target: https://doi.org/10.5281/zenodo.22991978
 
 .. |License| image:: https://img.shields.io/github/license/tomasstolker/species
    :target: https://github.com/tomasstolker/species/blob/main/LICENSE

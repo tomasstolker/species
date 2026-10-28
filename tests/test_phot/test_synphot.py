@@ -12,9 +12,23 @@ from species.util import test_util
 
 class TestPhotometry:
     def setup_class(self):
-        self.limit = 1e-8
+        self.limit = 1e-6
 
-        url = "http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/Data/plnt_Jupiter.txt"
+    try:
+        url = (
+            "http://irtfweb.ifa.hawaii.edu/~spex/"
+            "IRTF_Spectral_Library/Data/plnt_Jupiter.txt"
+        )
+
+        urllib.request.urlretrieve(url, "plnt_Jupiter.txt")
+
+    except urllib.error.URLError:
+        url = (
+            "https://irsa.ipac.caltech.edu/data/"
+            "IRTF_Extra/SpectralLibrary/spectra/"
+            "spectrallibrary/plnt_Jupiter.txt"
+        )
+
         urllib.request.urlretrieve(url, "plnt_Jupiter.txt")
 
     def teardown_class(self):

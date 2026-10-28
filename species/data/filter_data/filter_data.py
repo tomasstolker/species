@@ -164,7 +164,9 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.Lp":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Lp.dat"
+        url = (
+            "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Lp.dat"
+        )
         filter_path = os.path.join(input_path, "TC_filter_Lp.dat")
 
         pooch.retrieve(
@@ -182,7 +184,9 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.Mp":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Mp.dat"
+        url = (
+            "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Mp.dat"
+        )
         filter_path = os.path.join(input_path, "TC_filter_Mp.dat")
 
         pooch.retrieve(
@@ -200,7 +204,9 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.N1":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_N1.dat"
+        url = (
+            "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_N1.dat"
+        )
         filter_path = os.path.join(input_path, "TC_filter_N1.dat")
 
         pooch.retrieve(
@@ -218,7 +224,9 @@ def download_filter(
         os.remove(filter_path)
 
     elif filter_id == "ELT/METIS.Q1":
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Q1.dat"
+        url = (
+            "https://home.strw.leidenuniv.nl/~stolker/species/filters/TC_filter_Q1.dat"
+        )
         filter_path = os.path.join(input_path, "TC_filter_Q1.dat")
 
         pooch.retrieve(
@@ -293,6 +301,10 @@ def download_filter(
         url = "http://svo2.cab.inta-csic.es/svo/theory/fps/fps.php?ID=" + filter_id
         filter_path = os.path.join(input_path, "filter.xml")
 
+        wavelength = None
+        transmission = None
+        det_type = None
+
         try:
             urlretrieve(url, filter_path)
             table = parse_single_table(filter_path)
@@ -300,27 +312,6 @@ def download_filter(
             wavelength = table.array["Wavelength"]
             transmission = table.array["Transmission"]
 
-        except IndexError:
-            wavelength = None
-            transmission = None
-            det_type = None
-
-            warnings.warn(
-                f"Filter '{filter_id}' is not available "
-                "on the SVO Filter Profile Service."
-            )
-
-        except:
-            os.remove(filter_path)
-
-            raise ValueError(
-                f"The filter data of '{filter_id}' could not "
-                "be downloaded. Perhaps the website of the "
-                "SVO Filter Profile Service (http://svo2.cab."
-                "inta-csic.es/svo/theory/fps/) is not available?"
-            )
-
-        if transmission is not None:
             det_type = table.get_field_by_id("DetectorType").value
 
             # For backward compatibility
@@ -344,7 +335,59 @@ def download_filter(
 
             wavelength *= 1e-4  # (um)
 
-        os.remove(filter_path)
+        except Exception as exc:
+            warnings.warn(
+                f"Could not retrieve '{filter_id}' from SVO "
+                f"({exc}). Trying Leiden Observatory mirror."
+            )
+
+        finally:
+            if os.path.exists(filter_path):
+                os.remove(filter_path)
+
+        if wavelength is None or transmission is None:
+            # Retrieve filter profile from STRW server
+
+            mirror_url = (
+                "https://home.strw.leidenuniv.nl/"
+                f"~stolker/species/svo_filters/{filter_id}.csv"
+            )
+
+            filter_path = os.path.join(input_path, "filter.csv")
+
+            try:
+                pooch.retrieve(
+                    url=mirror_url,
+                    known_hash=None,
+                    fname="filter.csv",
+                    path=input_path,
+                    progressbar=False,
+                )
+
+                # Read detector type from first line
+                with open(filter_path, "r", encoding="utf-8") as filter_file:
+                    det_type = filter_file.readline().strip().split("=")[1]
+
+                if det_type not in ("energy", "photon"):
+                    raise ValueError(f"Unknown detector type: {det_type}")
+
+                # Read wavelength (um) and transmission
+                wavelength, transmission = np.loadtxt(
+                    filter_path,
+                    delimiter=",",
+                    skiprows=2,
+                    unpack=True,
+                )
+
+            except Exception as exc:
+                raise ValueError(
+                    f"Filter '{filter_id}' could not be downloaded "
+                    f"from the Leiden Observatory mirror: {exc}"
+                ) from exc
+
+            finally:
+                if os.path.exists(filter_path):
+                    os.remove(filter_path)
 
     if wavelength is not None:
         indices = []

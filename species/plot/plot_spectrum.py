@@ -13,7 +13,12 @@ import matplotlib.pyplot as plt
 
 from beartype import beartype
 from beartype.typing import Dict, List, Optional, Tuple, Union
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import (
+    AutoMinorLocator,
+    FuncFormatter,
+    NullFormatter,
+    LogLocator,
+)
 
 from species.core.box import (
     ModelBox,
@@ -1486,14 +1491,20 @@ def plot_spectrum(
 
             ax1.legend(**legend)
 
-    # if scale[0] == "log":
-    #     ax1.xaxis.set_major_formatter(ScalarFormatter())
-    #
-    #     if ax2 is not None:
-    #         ax2.xaxis.set_major_formatter(ScalarFormatter())
-    #
-    #     if ax3 is not None:
-    #         ax3.xaxis.set_major_formatter(ScalarFormatter())
+    if scale[0] == "log":
+        ax1.xaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5)))
+        ax1.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"{x:g}"))
+        ax1.xaxis.set_minor_formatter(NullFormatter())
+
+        if ax2 is not None:
+            ax2.xaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5)))
+            ax2.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"{x:g}"))
+            ax2.xaxis.set_minor_formatter(NullFormatter())
+
+        if ax3 is not None:
+            ax3.xaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5)))
+            ax3.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"{x:g}"))
+            ax3.xaxis.set_minor_formatter(NullFormatter())
 
     if units[0] in ["Hz", "GHz"] and xlim is None:
         ax1.invert_xaxis()
