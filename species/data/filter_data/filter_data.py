@@ -298,7 +298,7 @@ def download_filter(
         os.remove(filter_path)
 
     else:
-        url = "http://svo2.cab.inta-csic.es/svo/theory/fps/fps.php?ID=" + filter_id
+        url = "https://svo2.cab.inta-csic.es/theory/fps/fps.php?ID=" + filter_id
         filter_path = os.path.join(input_path, "filter.xml")
 
         wavelength = None
