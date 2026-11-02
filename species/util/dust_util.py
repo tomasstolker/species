@@ -182,14 +182,14 @@ def dust_cross_section(
     k_index: Real,
 ) -> Real:
     """
-    Function for calculating the extinction cross section for a size
+    Calculate the extinction cross section for a size
     distribution of dust grains.
 
     Parameters
     ----------
     dn_grains : np.ndarray
-        Number of grains in each radius bin, normalized to a total
-        of 1 grain.
+        Number of grains in each radius bin, normalized to
+        a total of 1 grain.
     radii : np.ndarray
         Grain radii (um).
     wavelength : float
@@ -202,36 +202,18 @@ def dust_cross_section(
     Returns
     -------
     float
-        Extinction cross section (um2)
+        Extinction cross section (um2).
     """
 
-    # Importing here because it causes an error with Python 3.10
-    import PyMieScatt
+    from miepython import efficiencies
 
-    c_ext = 0.0
+    q_ext, _, _, _ = efficiencies(
+        complex(n_index, -k_index),
+        2.0 * radii,
+        wavelength,
+    )
 
-    for i, item in enumerate(radii):
-        # From the PyMieScatt documentation: When using PyMieScatt,
-        # pay close attention to the units of the your inputs and
-        # outputs. Wavelength and particle diameters are always in
-        # nanometers, efficiencies are unitless, cross-sections are
-        # in nm2, coefficients are in Mm-1, and size distribution
-        # concentration is always in cm-3.
-        mie = PyMieScatt.MieQ(
-            complex(n_index, k_index),
-            wavelength * 1e3,  # (nm)
-            2.0 * item * 1e3,  # diameter (nm)
-            asDict=True,
-            asCrossSection=False,
-        )
-
-        if "Qext" in mie:
-            c_ext += np.pi * item**2 * mie["Qext"] * dn_grains[i]  # (um2)
-
-        else:
-            raise ValueError("Qext not found in the PyMieScatt dictionary.")
-
-    return c_ext  # (um2)
+    return np.sum(np.pi * radii**2 * q_ext * dn_grains)
 
 
 @beartype
