@@ -346,7 +346,7 @@ def apply_obs(
             wavel=model_wavel,
             flux=model_flux,
             vsini=rot_broad,
-            eps=limb_dark,
+            eps=0.6 if limb_dark is None else limb_dark,
         )
 
     # Apply extinction
