@@ -40,7 +40,7 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
 
     iso_tag = "marleau2014"
 
-    url = "https://home.strw.leidenuniv.nl/~stolker/species/evolution_luminosity.fits"
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/marleau2014_lbol.fits"
 
     input_file = url.rsplit("/", maxsplit=1)[-1]
     data_file = Path(input_path) / input_file
@@ -50,13 +50,13 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="218bd69105206373389c8d513969c500ad39ec32a5bd98e248aedf0b3e29af67",
+            known_hash="76e47eb6b8124148bc618c1ec88b0885992e82f57606ad7ae24a1e77fa7011e4",
             fname=input_file,
             path=input_path,
             progressbar=True,
         )
 
-    url = "https://home.strw.leidenuniv.nl/~stolker/species/evolution_radius.fits"
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/marleau2014_radius.fits"
 
     input_file = url.rsplit("/", maxsplit=1)[-1]
     data_file = Path(input_path) / input_file
@@ -66,13 +66,13 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="6aa0e75b3e54a427caa124ac9f1906ac180245927238a00a57acda8d5e7bf75d",
+            known_hash="e69e78cd2fe5d642f493fa4e53dc7049db7269a9de9ad2aa0e447d02303b31eb",
             fname=input_file,
             path=input_path,
             progressbar=True,
         )
 
-    url = "https://home.strw.leidenuniv.nl/~stolker/species/evolution_points.json"
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/marleau2014_points.json"
 
     input_file = url.rsplit("/", maxsplit=1)[-1]
     data_file = Path(input_path) / input_file
@@ -82,7 +82,7 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="592415d9a5425211b6e1bdc1b0e36c7e45d317165dca639fbea7d77cbfcafb9d",
+            known_hash="dd2d5695e3eb1b07851523b9dfb518fd70a55ac6f85a2ccfe2b83d97d869d548",
             fname=input_file,
             path=input_path,
             progressbar=True,
@@ -91,19 +91,21 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
     print("\nAdding isochrones: Marleau & Cumming (2014)...", end="", flush=True)
 
     # Bolometric luminosity log10(L/Lsun)
-    data_lbol = fits.getdata(os.path.join(input_path, "evolution_luminosity.fits"))
+    data_lbol = fits.getdata(os.path.join(input_path, "marleau2014_lbol.fits"))
     data_lbol = np.log10(data_lbol)
 
     # Radius (Rjup)
-    data_radius = fits.getdata(os.path.join(input_path, "evolution_radius.fits"))
+    data_radius = fits.getdata(os.path.join(input_path, "marleau2014_radius.fits"))
 
-    file_name = os.path.join(input_path, "evolution_points.json")
+    file_name = os.path.join(input_path, "marleau2014_points.json")
     with open(file_name, "r", encoding="utf-8") as json_file:
         grid_points = json.load(json_file)
 
-    # Select Solar Helium and Deuterium fraction, and zero core mass
-    data_lbol = data_lbol[..., 1, 1, 0]
-    data_radius = data_radius[..., 1, 1, 0]
+    # Select primordial helium and feuterium fraction, and zero core mass
+    # These values were also used in Marleau et al.
+    # TODO Allow these parameters to be interpolated
+    data_lbol = data_lbol[..., 1, 0, 0]
+    data_radius = data_radius[..., 1, 0, 0]
 
     model_param = ["age", "mass", "s_init"]
 
