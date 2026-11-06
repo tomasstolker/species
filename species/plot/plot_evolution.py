@@ -339,10 +339,11 @@ def plot_cooling(
 def plot_isochrones(
     tag: str,
     n_samples: int = 50,
+    track_type: str = "mass",
     xlim: Optional[Tuple[Real, Real]] = None,
     ylim: Optional[Tuple[Real, Real]] = None,
-    xscale: Optional[str] = "linear",
-    yscale: Optional[str] = "linear",
+    xscale: Optional[str] = None,
+    yscale: Optional[str] = None,
     title: Optional[str] = None,
     offset: Optional[Tuple[Real, Real]] = None,
     figsize: Optional[Tuple[Real, Real]] = (4.0, 2.5),
@@ -361,18 +362,23 @@ def plot_isochrones(
     tag : str
         Database tag where the samples are stored
     n_samples : int
-        Number of randomly drawn cooling tracks that will be plotted.
+        Number of randomly drawn tracks that will be plotted.
+    track_type : str
+        Plot luminosity as a function of either "mass" (default) or
+        "entropy". The latter requires an initial entropy parameter in
+        the posterior samples. For entropy tracks, the horizontal
+        error bars show the posterior median and 16th and 84th percentiles.
     xlim : tuple(float, float), None
-        Limits of the wavelength axis. Automatic limits are used if
+        Limits of the horizontal axis. Automatic limits are used if
         the argument is set to ``None``.
     ylim : tuple(float, float), None
-        Limits of the flux axis. Automatic limits are used if
+        Limits of the luminosity axis. Automatic limits are used if
         the argument is set to ``None``.
     xscale : str, None
         Scale of the x axis ('linear' or 'log'). The scale is set
         to ``'linear'`` if the argument is set to ``None``.
     yscale : str, None
-        Scale of the x axis ('linear' or 'log'). The scale is set
+        Scale of the y axis ('linear' or 'log'). The scale is set
         to ``'linear'`` if the argument is set to ``None``.
     title : str
         Title to show at the top of the plot.
@@ -389,10 +395,10 @@ def plot_isochrones(
     matplotlib.figure.Figure
         The ``Figure`` object that can be used for further
         customization of the plot.
-    np.ndarray
-        Array with the isochrones. The array contains
-        :math:`L/L_\\odot` as function of time for each companions
-        and sample, so the shape is (n_companions, n_samples, n_masses).
+    list
+        Tracks for each companion and sample. Each track contains
+        the mass or initial entropy values and the corresponding
+        :math:`\\log(L/L_\\odot)` values.
     np.ndarray
         Array with the random indices that have been
         sampled from the posterior distribution.
@@ -426,6 +432,7 @@ def plot_isochrones(
     if np.isnan(age_prior[0]):
         param_idx = samples_box.parameters.index("age")
         age_prior = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
     else:
         # Asymmetric normal prior set in FitEvolution
         age_prior = [
@@ -452,6 +459,18 @@ def plot_isochrones(
 
     if yscale is None:
         yscale = "linear"
+
+    if track_type not in ["mass", "entropy"]:
+        raise ValueError(
+            f"Invalid value for track_type: '{track_type}'. "
+            "Must be either 'mass' or 'entropy'."
+        )
+
+    if track_type == "entropy" and "s_init_0" not in param_indices:
+        raise ValueError(
+            f"The '{model_name}' model does not support entropy "
+            "tracks. Please use track_type='mass' instead."
+        )
 
     isochrones = []
     for i in range(n_planets):
@@ -496,7 +515,13 @@ def plot_isochrones(
             ax[i].xaxis.set_minor_locator(AutoMinorLocator(5))
 
         if i == n_planets - 1:
-            ax[i].set_xlabel(r"Mass ($M_\mathrm{J}$)", fontsize=13)
+            if track_type == "mass":
+                ax[i].set_xlabel(r"Mass ($M_\mathrm{J}$)", fontsize=13)
+
+            elif track_type == "entropy":
+                ax[i].set_xlabel(
+                    r"Initial entropy ($k_\mathrm{b}/\mathrm{baryon}$)", fontsize=13
+                )
 
         ax[i].set_ylabel(r"$\log(L/L_\odot)$", fontsize=13)
 
@@ -521,38 +546,74 @@ def plot_isochrones(
 
             if f"s_init_{planet_idx}" in param_indices:
                 s_init = samples[sample_idx, param_indices[f"s_init_{planet_idx}"]]
+
             else:
                 s_init = None
 
-            iso_box = read_iso.get_isochrone(
-                age=age, masses=None, s_init=s_init, param_interp=["log_lum"]
-            )
+            if track_type == "mass":
+                iso_box = read_iso.get_isochrone(
+                    age=age, masses=None, s_init=s_init, param_interp=["log_lum"]
+                )
 
-            isochrones[planet_idx].append([iso_box.mass, iso_box.log_lum])
+                isochrones[planet_idx].append([iso_box.mass, iso_box.log_lum])
 
-            ax[planet_idx].plot(
-                isochrones[planet_idx][-1][0],
-                isochrones[planet_idx][-1][1],
-                lw=0.5,
-                color="gray",
-                alpha=0.5,
-            )
+                ax[planet_idx].plot(
+                    isochrones[planet_idx][-1][0],
+                    isochrones[planet_idx][-1][1],
+                    lw=0.5,
+                    color="gray",
+                    alpha=0.5,
+                )
+
+            elif track_type == "entropy":
+                if f"mass_{planet_idx}" in param_indices:
+                    mass = samples[sample_idx, param_indices[f"mass_{planet_idx}"]]
+
+                else:
+                    # Use the mass prior if not in the samples
+                    if not isinstance(mass_prior[planet_idx], np.ndarray) and np.isnan(
+                        mass_prior[planet_idx]
+                    ):
+                        param_idx = samples_box.parameters.index(f"mass_{planet_idx}")
+                        mass = np.percentile(samples[:, param_idx], 50.0)
+
+                    else:
+                        mass = mass_prior[planet_idx][0]
+
+                iso_box = read_iso.get_entropy_track(
+                    age=age, mass=mass, param_interp=["log_lum"]
+                )
+
+                isochrones[planet_idx].append([iso_box.s_init, iso_box.log_lum])
+
+                ax[planet_idx].plot(
+                    isochrones[planet_idx][-1][0],
+                    isochrones[planet_idx][-1][1],
+                    lw=0.5,
+                    color="gray",
+                    alpha=0.5,
+                )
 
     for i in range(n_planets):
-        if not isinstance(mass_prior[i], np.ndarray) and np.isnan(mass_prior[i]):
+        if track_type == "entropy":
+            param_idx = samples_box.parameters.index(f"s_init_{i}")
+            x_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
+        elif not isinstance(mass_prior[i], np.ndarray) and np.isnan(mass_prior[i]):
             param_idx = samples_box.parameters.index(f"mass_{i}")
-            mass_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+            x_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
         else:
-            mass_tmp = [
+            x_tmp = [
                 mass_prior[i][0],
                 mass_prior[i][0] - mass_prior[i][1],
                 mass_prior[i][0] + mass_prior[i][1],
             ]
 
         ax[i].errorbar(
-            [mass_tmp[0]],
+            [x_tmp[0]],
             [log_lum[i][0]],
-            xerr=[[mass_tmp[0] - mass_tmp[1]], [mass_tmp[2] - mass_tmp[0]]],
+            xerr=[[x_tmp[0] - x_tmp[1]], [x_tmp[2] - x_tmp[0]]],
             yerr=[log_lum[i][1]],
             color="tab:orange",
         )

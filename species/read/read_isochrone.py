@@ -1247,6 +1247,290 @@ class ReadIsochrone:
         )
 
     @beartype
+    def get_entropy_track(
+        self,
+        age: Real,
+        mass: Real,
+        s_inits: Optional[np.ndarray] = None,
+        filter_mag: Optional[str] = None,
+        filters_color: Optional[Tuple[str, str]] = None,
+        param_interp: Optional[List[str]] = None,
+    ) -> IsochroneBox:
+        """
+        Function for interpolating an entropy track by fixing the age
+        and mass and varying the initial entropy (s_init).
+
+        Parameters
+        ----------
+        age : float
+            Age (:math:`\\mathrm{Myr}`) for which the entropy track
+            will be interpolated.
+        mass : float
+            Mass (:math:`M_\\mathrm{J}`) for which the entropy track
+            will be interpolated.
+        s_inits : np.ndarray, None
+            Initial entropy values (:math:`k_\\mathrm{b}/\\mathrm{baryon}`)
+            at which the entropy track will be interpolated. If set to
+            ``None``, all unique entropy values in the grid are used.
+            Values outside the grid at the selected age and mass are
+            returned as NaN.
+        filter_mag : str, None
+            Filter name for the absolute magnitude as listed in the
+            file with the isochrone data. Not selected if set to
+            ``None`` or if only evolutionary tracks are available.
+        filters_color : tuple(str, str), None
+            Filter names for the color as listed in the file with the
+            isochrone data. Not selected if set to ``None`` or if only
+            evolutionary tracks are available.
+        param_interp : list(str), None
+            List with the parameters that will be interpolated from
+            the isochrone grid. By default, all parameters will
+            be interpolated and stored in the ``IsochroneBox``
+            when the argument is set to ``None``. However, to
+            decrease the computation time, a subset of parameters
+            can be selected from 'log_lum', 'teff', 'logg', 'radius'.
+
+        Returns
+        -------
+        species.core.box.IsochroneBox
+            Box with the entropy track.
+        """
+
+        if self.interp_method == "linear":
+            from scipy.interpolate import LinearNDInterpolator as grid_interp
+
+        elif self.interp_method == "cubic":
+            from scipy.interpolate import CloughTocher2DInterpolator as grid_interp
+
+        color = None
+        mag_abs = None
+
+        # Read isochrone data
+
+        iso_data = self.read_data()
+
+        # Check if initial entropy is available in the data
+
+        if "s_init" not in iso_data:
+            raise ValueError(
+                f"The '{self.tag}' model does not have initial "
+                "entropy data, so entropy tracks can't be extracted."
+            )
+
+        # Determine s_init values to use
+
+        if s_inits is None:
+            s_inits = np.unique(iso_data["s_init"])
+
+        # Create array with grid points
+
+        age_points = np.full(s_inits.shape[0], age)  # (Myr)
+        mass_points = np.full(s_inits.shape[0], mass)  # (Mjup)
+
+        if self.regular_grid:
+            grid_points = [iso_data["age"], iso_data["mass"], iso_data["s_init"]]
+
+        else:
+            grid_points = np.column_stack(
+                [iso_data["age"], iso_data["mass"], iso_data["s_init"]]
+            )
+
+        # Parameter values to interpolate the entropy track
+
+        interp_values = np.column_stack([age_points, mass_points, s_inits])
+
+        # Check if the isochrone table has magnitudes
+
+        filters = self.get_filters()
+
+        if filters is not None:
+            if filters_color is not None:
+                index_color_1 = filters.index(filters_color[0])
+                index_color_2 = filters.index(filters_color[1])
+
+            if filter_mag is not None:
+                index_mag = filters.index(filter_mag)
+
+            if filters_color is not None:
+                if self.regular_grid:
+                    mag_color_1 = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["mag"][..., index_color_1],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )(interp_values)
+
+                else:
+                    mag_color_1 = griddata(
+                        points=grid_points,
+                        values=iso_data["mag"][:, index_color_1],
+                        xi=interp_values,
+                        method="linear",
+                        fill_value="nan",
+                        rescale=False,
+                    )
+
+                if self.regular_grid:
+                    mag_color_2 = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["mag"][..., index_color_2],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )(interp_values)
+
+                else:
+                    mag_color_2 = griddata(
+                        points=grid_points,
+                        values=iso_data["mag"][:, index_color_2],
+                        xi=interp_values,
+                        method="linear",
+                        fill_value="nan",
+                        rescale=False,
+                    )
+
+                color = mag_color_1 - mag_color_2
+
+            if filter_mag is not None:
+                if self.regular_grid:
+                    mag_abs = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["mag"][..., index_mag],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )(interp_values)
+
+                else:
+                    mag_abs = griddata(
+                        points=grid_points,
+                        values=iso_data["mag"][:, index_mag],
+                        xi=interp_values,
+                        method="linear",
+                        fill_value="nan",
+                        rescale=False,
+                    )
+
+        if "teff" in iso_data and (param_interp is None or "teff" in param_interp):
+            if self.teff_interp is None:
+                if self.regular_grid:
+                    self.teff_interp = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["teff"],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )
+                else:
+                    self.teff_interp = grid_interp(
+                        points=grid_points,
+                        values=iso_data["teff"],
+                        fill_value=np.nan,
+                        rescale=False,
+                    )
+            teff = self.teff_interp(interp_values)
+        else:
+            teff = None
+
+        if param_interp is None or "log_lum" in param_interp:
+            if self.loglum_interp is None:
+                if self.regular_grid:
+                    self.loglum_interp = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["log_lum"],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )
+                else:
+                    self.loglum_interp = grid_interp(
+                        points=grid_points,
+                        values=iso_data["log_lum"],
+                        fill_value=np.nan,
+                        rescale=False,
+                    )
+            log_lum = self.loglum_interp(interp_values)
+        else:
+            log_lum = None
+
+        if "log_g" in iso_data and (param_interp is None or "logg" in param_interp):
+            if self.logg_interp is None:
+                if self.regular_grid:
+                    self.logg_interp = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["log_g"],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )
+                else:
+                    self.logg_interp = grid_interp(
+                        points=grid_points,
+                        values=iso_data["log_g"],
+                        fill_value=np.nan,
+                        rescale=False,
+                    )
+            logg = self.logg_interp(interp_values)
+        else:
+            logg = None
+
+        if "radius" in iso_data and (param_interp is None or "radius" in param_interp):
+            if self.radius_interp is None:
+                if self.regular_grid:
+                    self.radius_interp = RegularGridInterpolator(
+                        grid_points,
+                        iso_data["radius"],
+                        method=self.interp_method,
+                        bounds_error=False,
+                        fill_value=np.nan,
+                    )
+                else:
+                    self.radius_interp = grid_interp(
+                        points=grid_points,
+                        values=iso_data["radius"],
+                        fill_value=np.nan,
+                        rescale=False,
+                    )
+            radius = self.radius_interp(interp_values)
+        else:
+            radius = None
+
+        if mag_abs is None and filter_mag is not None:
+            warnings.warn(
+                f"The isochrones of {self.tag} do not have "
+                f"magnitudes for the {filter_mag} filter so "
+                f"setting the argument of 'filter_mag' to None."
+            )
+
+            filter_mag = None
+
+        if color is None and filters_color is not None:
+            warnings.warn(
+                f"The isochrones of {self.tag} do not have "
+                f"magnitudes for the {filters_color} filters so "
+                f"setting the argument of 'filter_color' to None."
+            )
+
+            filters_color = None
+
+        return create_box(
+            boxtype="isochrone",
+            model=self.tag,
+            age=age,
+            s_init=s_inits,
+            mass=mass,
+            filters_color=filters_color,
+            filter_mag=filter_mag,
+            color=color,
+            magnitude=mag_abs,
+            log_lum=log_lum,
+            teff=teff,
+            logg=logg,
+            radius=radius,
+        )
+
+    @beartype
     def get_color_magnitude(
         self,
         age: Real,
