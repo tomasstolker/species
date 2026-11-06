@@ -2238,42 +2238,42 @@ class FitModel:
 
                     # Set rotational broadening
 
-                    if "vsini" in self.modelpar:
-                        rot_broad_0 = params[self.cube_index["vsini"]]
+                    if "vsini" in all_param:
+                        rot_broad_0 = all_param["vsini"]
 
-                    elif "vsini_0" in self.modelpar:
-                        rot_broad_0 = params[self.cube_index["vsini_0"]]
+                    elif "vsini_0" in all_param:
+                        rot_broad_0 = all_param["vsini_0"]
 
-                    elif f"vsini_{spec_item}_0" in self.modelpar:
-                        rot_broad_0 = params[self.cube_index[f"vsini_{spec_item}_0"]]
+                    elif f"vsini_{spec_item}_0" in all_param:
+                        rot_broad_0 = all_param[f"vsini_{spec_item}_0"]
 
                     else:
                         rot_broad_0 = None
 
                     # Set linear limb-darkening coefficient
 
-                    if "limb_dark" in self.modelpar:
-                        limb_dark_0 = params[self.cube_index["limb_dark"]]
+                    if "limb_dark" in all_param:
+                        limb_dark_0 = all_param["limb_dark"]
 
-                    elif "limb_dark_0" in self.modelpar:
-                        limb_dark_0 = params[self.cube_index["limb_dark_0"]]
+                    elif "limb_dark_0" in all_param:
+                        limb_dark_0 = all_param["limb_dark_0"]
 
-                    elif f"limb_dark_{spec_item}_0" in self.modelpar:
-                        limb_dark_0 = params[self.cube_index[f"limb_dark_{spec_item}_0"]]
+                    elif f"limb_dark_{spec_item}_0" in all_param:
+                        limb_dark_0 = all_param[f"limb_dark_{spec_item}_0"]
 
                     else:
                         limb_dark_0 = None
 
                     # Set radial velocity
 
-                    if "rad_vel" in self.modelpar:
-                        rad_vel_0 = params[self.cube_index["rad_vel"]]
+                    if "rad_vel" in all_param:
+                        rad_vel_0 = all_param["rad_vel"]
 
-                    elif "rad_vel_0" in self.modelpar:
-                        rad_vel_0 = params[self.cube_index["rad_vel_0"]]
+                    elif "rad_vel_0" in all_param:
+                        rad_vel_0 = all_param["rad_vel_0"]
 
-                    elif f"rad_vel_{spec_item}_0" in self.modelpar:
-                        rad_vel_0 = params[self.cube_index[f"rad_vel_{spec_item}_0"]]
+                    elif f"rad_vel_{spec_item}_0" in all_param:
+                        rad_vel_0 = all_param[f"rad_vel_{spec_item}_0"]
 
                     else:
                         rad_vel_0 = None
@@ -2303,42 +2303,42 @@ class FitModel:
 
                     # Set rotational broadening
 
-                    if "vsini" in self.modelpar:
-                        rot_broad_1 = params[self.cube_index["vsini"]]
+                    if "vsini" in all_param:
+                        rot_broad_1 = all_param["vsini"]
 
-                    elif "vsini_1" in self.modelpar:
-                        rot_broad_1 = params[self.cube_index["vsini_1"]]
+                    elif "vsini_1" in all_param:
+                        rot_broad_1 = all_param["vsini_1"]
 
-                    elif f"vsini_{spec_item}_1" in self.modelpar:
-                        rot_broad_1 = params[self.cube_index[f"vsini_{spec_item}_1"]]
+                    elif f"vsini_{spec_item}_1" in all_param:
+                        rot_broad_1 = all_param[f"vsini_{spec_item}_1"]
 
                     else:
                         rot_broad_1 = None
 
                     # Set linear limb-darkening coefficient
 
-                    if "limb_dark" in self.modelpar:
-                        limb_dark_1 = params[self.cube_index["limb_dark"]]
+                    if "limb_dark" in all_param:
+                        limb_dark_1 = all_param["limb_dark"]
 
-                    elif "limb_dark_1" in self.modelpar:
-                        limb_dark_1 = params[self.cube_index["limb_dark_1"]]
+                    elif "limb_dark_1" in all_param:
+                        limb_dark_1 = all_param["limb_dark_1"]
 
-                    elif f"limb_dark_{spec_item}_1" in self.modelpar:
-                        limb_dark_1 = params[self.cube_index[f"limb_dark_{spec_item}_1"]]
+                    elif f"limb_dark_{spec_item}_1" in all_param:
+                        limb_dark_1 = all_param[f"limb_dark_{spec_item}_1"]
 
                     else:
                         limb_dark_1 = None
 
                     # Set radial velocity
 
-                    if "rad_vel" in self.modelpar:
-                        rad_vel_1 = params[self.cube_index["rad_vel"]]
+                    if "rad_vel" in all_param:
+                        rad_vel_1 = all_param["rad_vel"]
 
-                    elif "rad_vel_1" in self.modelpar:
-                        rad_vel_1 = params[self.cube_index["rad_vel_1"]]
+                    elif "rad_vel_1" in all_param:
+                        rad_vel_1 = all_param["rad_vel_1"]
 
-                    elif f"rad_vel_{spec_item}_1" in self.modelpar:
-                        rad_vel_1 = params[self.cube_index[f"rad_vel_{spec_item}_1"]]
+                    elif f"rad_vel_{spec_item}_1" in all_param:
+                        rad_vel_1 = all_param[f"rad_vel_{spec_item}_1"]
 
                     else:
                         rad_vel_1 = None
@@ -2373,33 +2373,33 @@ class FitModel:
                 else:
                     # Set rotational broadening
 
-                    if "vsini" in self.modelpar:
-                        rot_broad = params[self.cube_index["vsini"]]
+                    if "vsini" in all_param:
+                        rot_broad = all_param["vsini"]
 
-                    elif f"vsini_{spec_item}" in self.modelpar:
-                        rot_broad = params[self.cube_index[f"vsini_{spec_item}"]]
+                    elif f"vsini_{spec_item}" in all_param:
+                        rot_broad = all_param[f"vsini_{spec_item}"]
 
                     else:
                         rot_broad = None
 
                     # Set linear limb-darkening coefficient
 
-                    if "limb_dark" in self.modelpar:
-                        limb_dark = params[self.cube_index["limb_dark"]]
+                    if "limb_dark" in all_param:
+                        limb_dark = all_param["limb_dark"]
 
-                    elif f"limb_dark_{spec_item}" in self.modelpar:
-                        limb_dark = params[self.cube_index[f"limb_dark_{spec_item}"]]
+                    elif f"limb_dark_{spec_item}" in all_param:
+                        limb_dark = all_param[f"limb_dark_{spec_item}"]
 
                     else:
                         limb_dark = None
 
                     # Set radial velocity
 
-                    if "rad_vel" in self.modelpar:
-                        rad_vel = params[self.cube_index["rad_vel"]]
+                    if "rad_vel" in all_param:
+                        rad_vel = all_param["rad_vel"]
 
-                    elif f"rad_vel_{spec_item}" in self.modelpar:
-                        rad_vel = params[self.cube_index[f"rad_vel_{spec_item}"]]
+                    elif f"rad_vel_{spec_item}" in all_param:
+                        rad_vel = all_param[f"rad_vel_{spec_item}"]
 
                     else:
                         rad_vel = None
