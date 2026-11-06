@@ -1246,7 +1246,8 @@ class FitModel:
             for filter_item in inc_phot:
                 print(f"Interpolating {filter_item}...", end="", flush=True)
                 readmodel = ReadModel("blackbody", filter_name=filter_item)
-                readmodel.interpolate_grid(teff_range=None)
+                # Only the wavelengths are used, the flux is computed with ReadPlanck.planck
+                readmodel.wl_points, readmodel.wl_index = readmodel.wavelength_points()
                 self.diskphot.append(readmodel)
                 print(" [DONE]")
 
@@ -1262,7 +1263,7 @@ class FitModel:
                     self.modelspec[spec_idx].wl_points[-1],
                 )
                 readmodel = ReadModel("blackbody", wavel_range=wavel_range)
-                readmodel.interpolate_grid(teff_range=None)
+                readmodel.wl_points, readmodel.wl_index = readmodel.wavelength_points()
                 self.diskspec.append(readmodel)
                 print(" [DONE]")
 
