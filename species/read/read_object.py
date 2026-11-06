@@ -123,15 +123,13 @@ class ReadObject:
                     f"available with the {filter_name} filter."
                 )
 
-            obj_phot = np.array(
-                hdf5_file[f"objects/{self.object_name}/{filter_name}"]
-            )
+            obj_phot = np.array(hdf5_file[f"objects/{self.object_name}/{filter_name}"])
 
         if return_mag:
-            obj_phot = obj_phot[:2, ]
+            obj_phot = obj_phot[:2,]
 
         else:
-            obj_phot = obj_phot[2:, ]
+            obj_phot = obj_phot[2:,]
 
         return obj_phot
 
