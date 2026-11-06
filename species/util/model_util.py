@@ -309,10 +309,11 @@ def apply_obs(
     rot_broad : float, None
         Rotational broadening :math:`v\\sin{i}` (km/s). Not
         applied if the argument is set to ``None``.
-    limb_dark : float
+    limb_dark : float, None
         Linear limb darkening coefficient in the range of 0.0
-        to 1.0 (default: 0.6). This parameter is only applied
-        in combination with setting ``rot_broad``.
+        to 1.0 (default: 0.6). The default of 0.6 is also used
+        if the argument is set to ``None``. This parameter is
+        only applied in combination with setting ``rot_broad``.
     rad_vel : float, None
         Radial velocity (km/s). Not applied if the argument
         is set to ``None``.
