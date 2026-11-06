@@ -1246,7 +1246,8 @@ class FitModel:
             for filter_item in inc_phot:
                 print(f"Interpolating {filter_item}...", end="", flush=True)
                 readmodel = ReadModel("blackbody", filter_name=filter_item)
-                readmodel.interpolate_grid(teff_range=None)
+                # Only the wavelengths are used, the flux is computed with ReadPlanck.planck
+                readmodel.wl_points, readmodel.wl_index = readmodel.wavelength_points()
                 self.diskphot.append(readmodel)
                 print(" [DONE]")
 
@@ -1262,7 +1263,7 @@ class FitModel:
                     self.modelspec[spec_idx].wl_points[-1],
                 )
                 readmodel = ReadModel("blackbody", wavel_range=wavel_range)
-                readmodel.interpolate_grid(teff_range=None)
+                readmodel.wl_points, readmodel.wl_index = readmodel.wavelength_points()
                 self.diskspec.append(readmodel)
                 print(" [DONE]")
 
@@ -2065,9 +2066,9 @@ class FitModel:
                 # Add blackbody disk components
 
                 if self.n_disk == 1:
-                    disk_flux = self.diskphot[phot_idx].spectrum_interp(
-                        [all_param["disk_teff"]]
-                    )[0]
+                    disk_flux = ReadPlanck.planck(
+                        self.diskphot[phot_idx].wl_points, all_param["disk_teff"], 1.0
+                    )
 
                     # Apply extinction and flux scaling
 
@@ -2089,9 +2090,11 @@ class FitModel:
 
                 elif self.n_disk > 1:
                     for disk_idx in range(self.n_disk):
-                        disk_flux = self.diskphot[phot_idx].spectrum_interp(
-                            [all_param[f"disk_teff_{disk_idx}"]]
-                        )[0]
+                        disk_flux = ReadPlanck.planck(
+                            self.diskphot[phot_idx].wl_points,
+                            all_param[f"disk_teff_{disk_idx}"],
+                            1.0,
+                        )
 
                         # Apply extinction and flux scaling
 
@@ -2429,9 +2432,9 @@ class FitModel:
                     disk_wavel = self.diskspec[spec_idx].wl_points
 
                     if self.n_disk == 1:
-                        flux_tmp = self.diskspec[spec_idx].spectrum_interp(
-                            [all_param["disk_teff"]]
-                        )[0]
+                        flux_tmp = ReadPlanck.planck(
+                            disk_wavel, all_param["disk_teff"], 1.0
+                        )
 
                         # Apply extinction and flux scaling
 
@@ -2449,9 +2452,9 @@ class FitModel:
                         disk_flux = 0.0
 
                         for disk_idx in range(self.n_disk):
-                            flux_tmp = self.diskspec[spec_idx].spectrum_interp(
-                                [all_param[f"disk_teff_{disk_idx}"]]
-                            )[0]
+                            flux_tmp = ReadPlanck.planck(
+                                disk_wavel, all_param[f"disk_teff_{disk_idx}"], 1.0
+                            )
 
                             # Apply extinction and flux scaling
 
