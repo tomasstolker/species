@@ -2065,9 +2065,9 @@ class FitModel:
                 # Add blackbody disk components
 
                 if self.n_disk == 1:
-                    disk_flux = self.diskphot[phot_idx].spectrum_interp(
-                        [all_param["disk_teff"]]
-                    )[0]
+                    disk_flux = ReadPlanck.planck(
+                        self.diskphot[phot_idx].wl_points, all_param["disk_teff"], 1.0
+                    )
 
                     # Apply extinction and flux scaling
 
@@ -2089,9 +2089,11 @@ class FitModel:
 
                 elif self.n_disk > 1:
                     for disk_idx in range(self.n_disk):
-                        disk_flux = self.diskphot[phot_idx].spectrum_interp(
-                            [all_param[f"disk_teff_{disk_idx}"]]
-                        )[0]
+                        disk_flux = ReadPlanck.planck(
+                            self.diskphot[phot_idx].wl_points,
+                            all_param[f"disk_teff_{disk_idx}"],
+                            1.0,
+                        )
 
                         # Apply extinction and flux scaling
 
@@ -2429,9 +2431,9 @@ class FitModel:
                     disk_wavel = self.diskspec[spec_idx].wl_points
 
                     if self.n_disk == 1:
-                        flux_tmp = self.diskspec[spec_idx].spectrum_interp(
-                            [all_param["disk_teff"]]
-                        )[0]
+                        flux_tmp = ReadPlanck.planck(
+                            disk_wavel, all_param["disk_teff"], 1.0
+                        )
 
                         # Apply extinction and flux scaling
 
@@ -2449,9 +2451,9 @@ class FitModel:
                         disk_flux = 0.0
 
                         for disk_idx in range(self.n_disk):
-                            flux_tmp = self.diskspec[spec_idx].spectrum_interp(
-                                [all_param[f"disk_teff_{disk_idx}"]]
-                            )[0]
+                            flux_tmp = ReadPlanck.planck(
+                                disk_wavel, all_param[f"disk_teff_{disk_idx}"], 1.0
+                            )
 
                             # Apply extinction and flux scaling
 
