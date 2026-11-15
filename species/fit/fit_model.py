@@ -247,6 +247,14 @@ class FitModel:
                  additional priors in the lists of ``'disk_teff'``
                  and ``'disk_radius'``.
 
+               - A prior restricts the disk components to be cooler
+                 and larger than the atmosphere, that is,
+                 ``disk_teff`` below ``teff`` and ``disk_radius``
+                 above ``radius``. With multiple components, the
+                 temperatures and radii also have to be decreasing
+                 and increasing, respectively, in the order as
+                 provided in ``bounds``.
+
             Blackbody parameters (only with ``model='planck'``):
 
                - This implementation fits both the atmospheric emission
@@ -1740,10 +1748,10 @@ class FitModel:
         # Enforce decreasing Teff and increasing R
 
         if self.n_disk == 1:
-            if all_param["disk_teff"] > all_param["disk_teff"]:
+            if "teff" in all_param and all_param["disk_teff"] > all_param["teff"]:
                 return -np.inf
 
-            if all_param["disk_radius"] < all_param["disk_radius"]:
+            if "radius" in all_param and all_param["disk_radius"] < all_param["radius"]:
                 return -np.inf
 
         elif self.n_disk > 1:
