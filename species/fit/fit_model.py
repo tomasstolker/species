@@ -2652,7 +2652,6 @@ class FitModel:
 
     @beartype
     def _lnprior_func(self, params) -> Real:
-        # TODO: Handle fixed parameters
         lnp = 0.0
         for item in self.modelpar:
             i = self.cube_index[item]
@@ -3665,7 +3664,17 @@ class FitModel:
 
         guess = guess or {}
 
-        # TODO: Handle normal priors and include in unit tests
+        for param_item, param_value in guess.items():
+            if param_item in self.bounds:
+                lower, upper = self.bounds[param_item]
+
+                if not lower <= param_value <= upper:
+                    raise ValueError(
+                        f"The initial guess for '{param_item}' "
+                        f"({param_value}) is outside the bounds "
+                        f"({lower}, {upper})."
+                    )
+
         rng = np.random.default_rng()
         initial = np.zeros((nwalkers, ndim))
         for item in self.modelpar:
@@ -3696,23 +3705,30 @@ class FitModel:
                 )
 
 
-        # TODO: Define an lnprob
-        # TODO: Specify args accordingly for lnprob
         # TODO: Support mpi and regular multiprocessing
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self._lnprob_func)
-        # TODO: Get initial paramters
         sampler.run_mcmc(initial, nsteps, progress=True)
+
+        samples = sampler.get_chain(flat=True)
+        ln_prob = sampler.get_log_prob(flat=True)
+
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
+            samples = np.append(
+                samples,
+                np.full((samples.shape[0], 1), param_value),
+                axis=1,
+            )
 
         from species.data.database import Database
 
         species_db = Database()
 
-        # TODO: Blob with lnprob
         species_db.add_samples(
             tag=tag,
             sampler="emcee",
-            samples=sampler.get_chain(flat=True),
-            ln_prob=sampler.get_log_prob(flat=True),
+            samples=samples,
+            ln_prob=ln_prob,
             modelpar=self.modelpar,
             bounds=self.bounds,
             normal_prior=self.normal_prior,
