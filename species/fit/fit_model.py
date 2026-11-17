@@ -2669,23 +2669,23 @@ class FitModel:
 
                 if item in self.bounds:
                     # Truncated Normal
-
                     low, high = self.bounds[item]
-
-                    a_trunc = ( low - loc) / scale
-
-                    b_trunc = ( high - loc) / scale
-
-                    lnp_i = truncnorm.pdf(pval, a_trunc, b_trunc, loc=loc, scale=scale)
+                    a_trunc = (low - loc) / scale
+                    b_trunc = (high - loc) / scale
+                    lnp_i = truncnorm.logpdf(
+                        pval, a_trunc, b_trunc, loc=loc, scale=scale
+                    )
                 else:
                     # Normal
-                    lnp_i = norm.pdf(pval, loc=loc, scale=scale)
+                    lnp_i = norm.logpdf(pval, loc=loc, scale=scale)
 
             else:
                 # If we reach this point, item within bounds and not normal -> Uniform
                 low, high = self.bounds[item]
-                lnp_i = 1 / (high - low)
+                lnp_i = -np.log(high - low)
+
             lnp += lnp_i
+
         return lnp
 
     @beartype
