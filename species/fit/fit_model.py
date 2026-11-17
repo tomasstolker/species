@@ -3671,13 +3671,25 @@ class FitModel:
         for item in self.modelpar:
             i = self.cube_index[item]
             if guess.get(item) is not None:
-                width = min(
-                    abs(guess[item] - self.bounds[item][0]),
-                    abs(guess[item] - self.bounds[item][1]),
+                if item in self.bounds:
+                    width = min(
+                        abs(guess[item] - self.bounds[item][0]),
+                        abs(guess[item] - self.bounds[item][1]),
+                    )
+                    initial[:, i] = guess[item] + rng.normal(
+                        0, 0.1 * width, nwalkers
+                    )
+                else:
+                    initial[:, i] = guess[item] + rng.normal(
+                        0, 0.1 * self.normal_prior[item][1], nwalkers
+                    )
+
+            elif item in self.normal_prior and item not in self.bounds:
+                initial[:, i] = rng.normal(
+                    loc=self.normal_prior[item][0],
+                    scale=self.normal_prior[item][1],
+                    size=nwalkers,
                 )
-
-                initial[:, i] = guess[item] + rng.normal(0, 0.1 * width, nwalkers)
-
             else:
                 initial[:, i] = rng.uniform(
                     low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
