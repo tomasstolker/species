@@ -2652,14 +2652,40 @@ class FitModel:
 
     @beartype
     def _lnprior_func(self, params) -> Real:
-        # TODO: Handle normal prior
+        # TODO: Handle fixed parameters
         lnp = 0.0
         for item in self.modelpar:
             i = self.cube_index[item]
-            low, high = self.bounds[item]
-            if not (low <= params[i] <= high):
-                return -np.inf
-            lnp += 1 / (high - low)
+            pval = params[i]
+
+            if item in self.bounds:
+                # If item has bounds and is outside, return -inf and skip calculations
+                low, high = self.bounds[item]
+                if not (low <= pval <= high):
+                    return -np.inf
+            if item in self.normal_prior:
+                # If items has normal prior, calculate norm or truncnorm
+                loc, scale = self.normal_prior[item]
+
+                if item in self.bounds:
+                    # Truncated Normal
+
+                    low, high = self.bounds[item]
+
+                    a_trunc = ( low - loc) / scale
+
+                    b_trunc = ( high - loc) / scale
+
+                    lnp_i = truncnorm.pdf(pval, a_trunc, b_trunc, loc=loc, scale=scale)
+                else:
+                    # Normal
+                    lnp_i = norm.pdf(pval, loc=loc, scale=scale)
+
+            else:
+                # If we reach this point, item within bounds and not normal -> Uniform
+                low, high = self.bounds[item]
+                lnp_i = 1 / (high - low)
+            lnp += lnp_i
         return lnp
 
     @beartype
