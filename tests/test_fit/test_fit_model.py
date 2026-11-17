@@ -70,8 +70,8 @@ def disable_grid_check(monkeypatch):
 
 
 # TODO: Test with multiprocessing
-@pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
 class TestFitModel:
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_create_model(self, fit_model_database, fixed):
         fit = create_fit_model(fixed=fixed)
 
@@ -84,6 +84,7 @@ class TestFitModel:
         assert fit.filter_name == ["MKO/NSFCam.J"]
         assert fit.fix_param == ({"log_powerlaw_c": 1.0} if fixed else {})
 
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_log_prior(self, fit_model_database, fixed):
         fit = create_fit_model(fixed=fixed)
         params = np.array([0.2, 0.0] + ([] if fixed else [1.0]))
@@ -96,6 +97,7 @@ class TestFitModel:
 
         assert fit._lnprior_func(params) == pytest.approx(expected)
 
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_multinest(self, fit_model_database, monkeypatch, fixed):
         if not hasattr(fit_model, "pymultinest"):
             pytest.skip("PyMultiNest is not available")
@@ -110,6 +112,7 @@ class TestFitModel:
 
         assert_samples_stored("multinest", "multinest", fixed=fixed)
 
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_ultranest(self, fit_model_database, monkeypatch, fixed):
         if not hasattr(fit_model, "ultranest"):
             pytest.skip("UltraNest is not available")
@@ -132,6 +135,7 @@ class TestFitModel:
 
         assert_samples_stored("ultranest", "ultranest", fixed=fixed)
 
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_dynesty(self, fit_model_database, monkeypatch, fixed):
         disable_grid_check(monkeypatch)
         fit = create_fit_model(fixed=fixed)
@@ -144,6 +148,7 @@ class TestFitModel:
 
         assert_samples_stored("dynesty", "dynesty", fixed=fixed)
 
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_emcee(self, fit_model_database, monkeypatch, fixed):
         disable_grid_check(monkeypatch)
         fit = create_fit_model(fixed=fixed)
@@ -155,11 +160,9 @@ class TestFitModel:
 
         assert_samples_stored("emcee", "emcee", fixed=fixed)
 
-    def test_run_emcee_with_guess(
-        self, fit_model_database, monkeypatch, fixed
-    ):
+    def test_run_emcee_with_guess(self, fit_model_database, monkeypatch):
         disable_grid_check(monkeypatch)
-        fit = create_fit_model(fixed=fixed)
+        fit = create_fit_model()
         guess = {
             "log_powerlaw_a": 0.1,
             "log_powerlaw_b": 1.0,
@@ -172,12 +175,10 @@ class TestFitModel:
             guess=guess,
         )
 
-        assert_samples_stored("emcee_guess", "emcee", fixed=fixed)
+        assert_samples_stored("emcee_guess", "emcee")
 
-    def test_run_emcee_with_guess_outside_bounds(
-        self, fit_model_database, fixed
-    ):
-        fit = create_fit_model(fixed=fixed)
+    def test_run_emcee_with_guess_outside_bounds(self, fit_model_database):
+        fit = create_fit_model()
         guess = {
             "log_powerlaw_a": 0.1,
             "log_powerlaw_b": 4.0,
