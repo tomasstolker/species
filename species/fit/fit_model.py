@@ -1612,6 +1612,18 @@ class FitModel:
                 print(f"   - {filter_item} = {self.weights[filter_item]:.2e}")
 
     @beartype
+    @property
+    def spec_labels(self) -> List[str]:
+        # Create list with the spectrum labels that are used
+        # for fitting an additional scaling parameter
+        spec_labels = []
+        for spec_item in self.spectrum:
+            if f"scaling_{spec_item}" in self.bounds:
+                spec_labels.append(f"scaling_{spec_item}")
+        return spec_labels
+
+
+    @beartype
     def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
     ):
@@ -2651,6 +2663,8 @@ class FitModel:
 
         return attr_dict
 
+
+
     @beartype
     def run_multinest(
         self,
@@ -2898,13 +2912,6 @@ class FitModel:
 
         post_samples = analyzer.get_equal_weighted_posterior()
 
-        # Create list with the spectrum labels that are used
-        # for fitting an additional scaling parameter
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
 
         # Samples and ln(L)
 
@@ -2950,7 +2957,7 @@ class FitModel:
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
                 fixed_param=self.fix_param,
-                spec_labels=spec_labels,
+                spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
 
@@ -3175,13 +3182,6 @@ class FitModel:
         else:
             check_nearest_spec(self.model, param_check)
 
-        # Create a list with scaling labels
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
-
         # Samples and ln(L)
 
         samples = result["samples"]
@@ -3226,7 +3226,7 @@ class FitModel:
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
                 fixed_param=self.fix_param,
-                spec_labels=spec_labels,
+                spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
 
@@ -3554,13 +3554,6 @@ class FitModel:
         else:
             check_nearest_spec(self.model, param_check)
 
-        # Create a list with scaling labels
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
-
         # Adding the fixed parameters to the samples
 
         for param_key, param_value in self.fix_param.items():
@@ -3599,6 +3592,6 @@ class FitModel:
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
                 fixed_param=self.fix_param,
-                spec_labels=spec_labels,
+                spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
