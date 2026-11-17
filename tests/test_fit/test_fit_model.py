@@ -1,8 +1,10 @@
+import numpy as np
 import pytest
+from scipy.stats import norm, truncnorm
 
-import species.fit.fit_model as fit_model_module
 from species import SpeciesInit
 from species.data.database import Database
+from species.fit import fit_model
 from species.fit.fit_model import FitModel
 from species.util import model_util, test_util
 
@@ -30,9 +32,12 @@ def create_fit_model():
         object_name="synthetic",
         model="powerlaw",
         bounds={
-            "log_powerlaw_a": (-1.0, 1.0),
             "log_powerlaw_b": (-3.0, 3.0),
             "log_powerlaw_c": (0.5, 2.0),
+        },
+        normal_prior={
+            "log_powerlaw_a": (0.0, 0.5),
+            "log_powerlaw_b": (0.0, 1.0),
         },
         inc_phot=True,
         inc_spec=False,
@@ -52,9 +57,7 @@ def assert_samples_stored(tag, sampler):
 def disable_grid_check(monkeypatch):
     # Sampler methods and Database.get_samples call this check, which expects
     # an atmospheric grid that the synthetic power-law model does not have.
-    monkeypatch.setattr(
-        fit_model_module, "check_nearest_spec", lambda *args: None
-    )
+    monkeypatch.setattr(fit_model, "check_nearest_spec", lambda *args: None)
     monkeypatch.setattr(model_util, "check_nearest_spec", lambda *args: None)
 
 
@@ -68,11 +71,24 @@ class TestFitModel:
             "log_powerlaw_b",
             "log_powerlaw_c",
         ]
-        assert fit.bounds["log_powerlaw_a"] == (-1.0, 1.0)
+        assert "log_powerlaw_a" not in fit.bounds
+        assert fit.bounds["log_powerlaw_b"] == (-3.0, 3.0)
         assert fit.filter_name == ["MKO/NSFCam.J"]
 
+    def test_log_prior(self, fit_model_database):
+        fit = create_fit_model()
+        params = np.array([0.2, 0.0, 1.0])
+
+        expected = (
+            norm.logpdf(params[0], loc=0.0, scale=0.5)
+            + truncnorm.logpdf(params[1], -3.0, 3.0, loc=0.0, scale=1.0)
+            - np.log(1.5)
+        )
+
+        assert fit._lnprior_func(params) == pytest.approx(expected)
+
     def test_run_multinest(self, fit_model_database, monkeypatch):
-        if not hasattr(fit_model_module, "pymultinest"):
+        if not hasattr(fit_model, "pymultinest"):
             pytest.skip("PyMultiNest is not available")
 
         disable_grid_check(monkeypatch)
@@ -86,7 +102,7 @@ class TestFitModel:
         assert_samples_stored("multinest", "multinest")
 
     def test_run_ultranest(self, fit_model_database, monkeypatch):
-        if not hasattr(fit_model_module, "ultranest"):
+        if not hasattr(fit_model, "ultranest"):
             pytest.skip("UltraNest is not available")
 
         disable_grid_check(monkeypatch)
