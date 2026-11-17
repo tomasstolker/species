@@ -42,6 +42,7 @@ def create_fit_model():
 def assert_samples_stored(tag, sampler):
     samples = Database().get_samples(tag)
 
+    assert samples.samples.ndim == 2
     assert samples.samples.shape[1] == 3
     assert samples.samples.shape[0] > 0
     assert samples.ln_prob.shape[0] == samples.samples.shape[0]
@@ -117,3 +118,16 @@ class TestFitModel:
         )
 
         assert_samples_stored("dynesty", "dynesty")
+
+    def test_run_emcee(self, fit_model_database, monkeypatch):
+        disable_grid_check(monkeypatch)
+        fit = create_fit_model()
+        # TODO: Test with guess
+        # TODO: Test with normal params
+        fit.run_emcee(
+            tag="emcee",
+            nwalkers=32,
+            nsteps=10,
+        )
+
+        assert_samples_stored("emcee", "emcee")

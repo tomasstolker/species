@@ -31,6 +31,16 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+try:
+    import emcee
+
+except ModuleNotFoundError:
+    warnings.warn(
+        "emcee could not be imported. Perhaps "
+        "because it is not installed in the environment?"
+    )
+
+
 from beartype import beartype
 from beartype.typing import Optional, Union, List, Tuple, Dict
 from schwimmbad import MPIPool
@@ -1801,7 +1811,10 @@ class FitModel:
         # spectrum_interp because it creates a list in
         # the order of the keys in param_dict
 
-        if self.param_interp is not None:
+        if self.model == "powerlaw":
+            param_dict = all_param
+
+        elif self.param_interp is not None:
             param_dict = {}
             for param_item in self.param_interp:
                 param_dict[param_item] = all_param[param_item]
@@ -2638,6 +2651,25 @@ class FitModel:
         return -0.5 * ln_like
 
     @beartype
+    def _lnprior_func(self, params) -> Real:
+        # TODO: Handle normal prior
+        lnp = 0.0
+        for item in self.modelpar:
+            i = self.cube_index[item]
+            low, high = self.bounds[item]
+            if not (low <= params[i] <= high):
+                return -np.inf
+            lnp += 1 / (high - low)
+        return lnp
+
+    @beartype
+    def _lnprob_func(self, params) -> Real:
+        lnp = self._lnprior_func(params)
+        if not np.isfinite(lnp):
+            return -np.inf
+        return lnp + self._lnlike_func(params)
+
+    @beartype
     def _create_attr_dict(self):
         """
         Internal function for creating a dictionary with attributes
@@ -2653,10 +2685,11 @@ class FitModel:
         attr_dict = {
             "model_type": "atmosphere",
             "model_name": self.model,
-            "ln_evidence": (self.ln_z, self.ln_z_error),
             "parallax": self.obj_parallax[0],
             "binary": self.binary,
         }
+        if self.ln_z is not None:
+            attr_dict["ln_evidence"] = (self.ln_z, self.ln_z_error)
 
         if self.ext_model is not None:
             attr_dict["ext_model"] = self.ext_model
@@ -3374,8 +3407,7 @@ class FitModel:
                             )
 
                             print(
-                                "Resumed a Dynesty run from "
-                                f"{out_basename}dynesty.save"
+                                f"Resumed a Dynesty run from {out_basename}dynesty.save"
                             )
 
                         else:
@@ -3595,3 +3627,58 @@ class FitModel:
                 spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
+
+    def run_emcee(
+        self,
+        tag,
+        nwalkers: int,
+        nsteps: int,
+        guess: Union[Dict[str, Real], Dict[str, None], None] = None,
+    ):
+        ndim = len(self.modelpar)
+
+        guess = guess or {}
+
+        # TODO: Handle normal priors and include in unit tests
+        rng = np.random.default_rng()
+        initial = np.zeros((nwalkers, ndim))
+        for item in self.modelpar:
+            i = self.cube_index[item]
+            if guess.get(item) is not None:
+                width = min(
+                    abs(guess[item] - self.bounds[item][0]),
+                    abs(guess[item] - self.bounds[item][1]),
+                )
+
+                initial[:, i] = guess[item] + rng.normal(0, 0.1 * width, nwalkers)
+
+            else:
+                initial[:, i] = rng.uniform(
+                    low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
+                )
+
+
+        # TODO: Define an lnprob
+        # TODO: Specify args accordingly for lnprob
+        # TODO: Support mpi and regular multiprocessing
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self._lnprob_func)
+        # TODO: Get initial paramters
+        sampler.run_mcmc(initial, nsteps, progress=True)
+
+        from species.data.database import Database
+
+        species_db = Database()
+
+        # TODO: Blob with lnprob
+        species_db.add_samples(
+            tag=tag,
+            sampler="emcee",
+            samples=sampler.get_chain(flat=True),
+            ln_prob=sampler.get_log_prob(flat=True),
+            modelpar=self.modelpar,
+            bounds=self.bounds,
+            normal_prior=self.normal_prior,
+            fixed_param=self.fix_param,
+            spec_labels=self.spec_labels,
+            attr_dict=self._create_attr_dict(),
+        )
