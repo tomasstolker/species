@@ -5,6 +5,7 @@ Module with functionalities for fitting atmospheric model spectra.
 import os
 import sys
 import warnings
+from multiprocessing import Pool
 
 from numbers import Real
 
@@ -3659,6 +3660,8 @@ class FitModel:
         nwalkers: int,
         nsteps: int,
         guess: Union[Dict[str, Real], Dict[str, None], None] = None,
+        n_pool: Optional[int] = None,
+        mpi_pool: bool = False,
     ):
         ndim = len(self.modelpar)
 
@@ -3705,12 +3708,27 @@ class FitModel:
                 )
 
 
-        # TODO: Support mpi and regular multiprocessing
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self._lnprob_func)
-        sampler.run_mcmc(initial, nsteps, progress=True)
+        if mpi_pool:
+            pool = MPIPool()
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+        elif n_pool:
+            pool = Pool(n_pool)
+        else:
+            pool = None
+        try:
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, self._lnprob_func, pool=pool)
+            sampler.run_mcmc(initial, nsteps, progress=True)
 
-        samples = sampler.get_chain(flat=True)
-        ln_prob = sampler.get_log_prob(flat=True)
+            samples = sampler.get_chain(flat=True)
+            ln_prob = sampler.get_log_prob(flat=True)
+
+        finally:
+            if pool is not None:
+                pool.close()
+                if not mpi_pool:
+                    pool.join()
 
         for param_key, param_value in self.fix_param.items():
             self.modelpar.append(param_key)
@@ -3720,19 +3738,29 @@ class FitModel:
                 axis=1,
             )
 
-        from species.data.database import Database
 
-        species_db = Database()
+        try:
+            from mpi4py import MPI
 
-        species_db.add_samples(
-            tag=tag,
-            sampler="emcee",
-            samples=samples,
-            ln_prob=ln_prob,
-            modelpar=self.modelpar,
-            bounds=self.bounds,
-            normal_prior=self.normal_prior,
-            fixed_param=self.fix_param,
-            spec_labels=self.spec_labels,
-            attr_dict=self._create_attr_dict(),
-        )
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ImportError:
+            mpi_rank = 0
+
+        if mpi_rank == 0:
+            from species.data.database import Database
+
+            species_db = Database()
+
+            species_db.add_samples(
+                tag=tag,
+                sampler="emcee",
+                samples=samples,
+                ln_prob=ln_prob,
+                modelpar=self.modelpar,
+                bounds=self.bounds,
+                normal_prior=self.normal_prior,
+                fixed_param=self.fix_param,
+                spec_labels=self.spec_labels,
+                attr_dict=self._create_attr_dict(),
+            )

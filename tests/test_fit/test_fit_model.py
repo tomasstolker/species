@@ -69,7 +69,6 @@ def disable_grid_check(monkeypatch):
     monkeypatch.setattr(model_util, "check_nearest_spec", lambda *args: None)
 
 
-# TODO: Test with multiprocessing
 class TestFitModel:
     @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_create_model(self, fit_model_database, fixed):
@@ -148,6 +147,20 @@ class TestFitModel:
 
         assert_samples_stored("dynesty", "dynesty", fixed=fixed)
 
+    def test_run_dynesty_with_n_pool(self, fit_model_database, monkeypatch):
+        disable_grid_check(monkeypatch)
+        fit = create_fit_model()
+        fit.run_dynesty(
+            tag="dynesty_n_pool",
+            n_live_points=10,
+            n_pool=2,
+            output="dynesty_n_pool/",
+            evidence_tolerance=5.0,
+            bound="none",
+        )
+
+        assert_samples_stored("dynesty_n_pool", "dynesty")
+
     @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_emcee(self, fit_model_database, monkeypatch, fixed):
         disable_grid_check(monkeypatch)
@@ -159,6 +172,17 @@ class TestFitModel:
         )
 
         assert_samples_stored("emcee", "emcee", fixed=fixed)
+
+    def test_run_emcee_with_n_pool(self, fit_model_database, monkeypatch):
+        disable_grid_check(monkeypatch)
+        fit = create_fit_model()
+        fit.run_emcee(
+            tag="emcee_n_pool",
+            nwalkers=32,
+            nsteps=10,
+            n_pool=2,
+        )
+        assert_samples_stored("emcee_n_pool", "emcee")
 
     def test_run_emcee_with_guess(self, fit_model_database, monkeypatch):
         disable_grid_check(monkeypatch)
