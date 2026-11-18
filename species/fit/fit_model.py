@@ -3665,6 +3665,16 @@ class FitModel:
         Function for running the fit with a grid of model spectra.
         The parameter estimation is done with ``emcee``.
 
+        .. warning::
+
+            MCMC may struggle with the complex posterior distributions
+            of atmospheric models in ``species``. In most cases, the
+            nested sampling methods
+            :meth:`~species.fit.fit_model.FitModel.run_multinest`,
+            :meth:`~species.fit.fit_model.FitModel.run_ultranest`, and
+            :meth:`~species.fit.fit_model.FitModel.run_dynesty` are
+            preferred.
+
         When using MPI, it is also required to install ``mpi4py`` (e.g.
         ``pip install mpi4py``), otherwise an error may occur when the
         ``output_folder`` is created by multiple processes.
