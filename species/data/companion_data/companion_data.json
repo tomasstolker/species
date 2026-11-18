@@ -86,6 +86,20 @@
             "Paranal/SPHERE.IRDIS_D_K12_2": [
                 16.85,
                 0.12
+            ],
+            "Keck/NIRC2.Lp": [
+                [
+                    15.03,
+                    0.26
+                ],
+                [
+                    14.87,
+                    0.15
+                ]
+            ],
+            "JWST/NIRCam.F444W": [
+                14.93,
+                0.15
             ]
         },
         "semi_major": [
@@ -110,6 +124,8 @@
         "references": [
             "Bell et al. 2015",
             "De Rosa et al. 2023",
+            "Franson et al. 2023",
+            "Franson et al. 2024",
             "Gaia Early Data Release 3"
         ]
     },
@@ -378,6 +394,43 @@
         "references": [
             "Currie et al. 2023",
             "Zuckerman 2019"
+        ]
+    },
+    "HIP 39017 B": {
+        "simbad": "V* V769 Mon",
+        "gaia_dr3": 3068540350999693952,
+        "parallax": [
+            15.1783,
+            0.0211
+        ],
+        "app_mag": {
+            "Keck/NIRC2.Lp": [
+                16.12,
+                0.18
+            ]
+        },
+        "semi_major": [
+            23.8,
+            -6.1,
+            8.7
+        ],
+        "mass_star": [
+            1.53,
+            0.28
+        ],
+        "mass_companion": [
+            30.0,
+            -12.0,
+            31.0
+        ],
+        "accretion": false,
+        "age": [
+            115.0,
+            0.0,
+            0.0
+        ],
+        "references": [
+            "Tobin et al. 2024"
         ]
     },
     "51 Eri b": {

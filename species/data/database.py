@@ -144,6 +144,8 @@ class Database:
             List with the object names that are stored in the database.
         """
 
+        from species.data.companion_data.companion_spectra import GRAVITY_TARGETS
+
         data_file = (
             Path(__file__).parent.resolve() / "companion_data/companion_data.json"
         )
@@ -176,7 +178,7 @@ class Database:
                     distance = planet_dict["distance"]
                     print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
 
-                app_mag = planet_dict["app_mag"]
+                app_mag = planet_dict.get("app_mag", {})
 
                 for mag_key, mag_value in app_mag.items():
                     if isinstance(mag_value[0], list) or isinstance(
@@ -193,7 +195,16 @@ class Database:
 
                 if planet_name in comp_spec:
                     for key, value in comp_spec[planet_name].items():
+                        if key == "GRAVITY" and planet_name in GRAVITY_TARGETS:
+                            continue
+
                         print(f"{key} spectrum from {value[3]}")
+
+                if planet_name in GRAVITY_TARGETS:
+                    print(
+                        "Combined GRAVITY spectrum from "
+                        "Kammerer et al. 2025, A&A, 704, A318"
+                    )
 
                 print()
 
@@ -310,10 +321,10 @@ class Database:
         verbose: bool = True,
     ) -> None:
         """
-        Function for adding the magnitudes and spectra of
-        directly imaged planets and brown dwarfs from
-        `data/companion_data/companion_data.json` and
-        :func:`~species.data.companion_data.companion_spectra` to the database.
+        Add the magnitudes and spectra of directly imaged planets and
+        brown dwarfs from `data/companion_data/companion_data.json`
+        and :func:`~species.data.companion_data.companion_spectra` to
+        the database.
 
         Parameters
         ----------
@@ -353,7 +364,11 @@ class Database:
             print(f"Add companion: {name}")
 
         for item in name:
-            spec_dict = companion_spectra(Path(self.data_folder), item, verbose=verbose)
+            spec_dict = companion_spectra(
+                Path(self.data_folder),
+                item,
+                verbose=verbose,
+            )
 
             parallax = None
 

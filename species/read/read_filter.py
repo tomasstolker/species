@@ -209,21 +209,31 @@ class ReadFilter:
 
         data = self.get_filter()
 
+        filt_fwhm = None
+
         if len(np.nonzero(data[:, 1])[0]) > 1:
+            # Subtract half the peak transmission and fit an
+            # interpolating spline. The interpolated transmission
+            # is at half its peak where the spline equals zero.
+
             spline = InterpolatedUnivariateSpline(
                 data[:, 0], data[:, 1] - np.max(data[:, 1]) / 2.0
             )
             root = spline.roots()
 
             diff = root - self.mean_wavelength()
+            left = diff[diff < 0.0]
+            right = diff[diff > 0.0]
 
-            root1 = np.amax(diff[diff < 0.0])
-            root2 = np.amin(diff[diff > 0.0])
+            if left.size == 0 or right.size == 0:
+                warnings.warn(
+                    "Cannot determine the FWHM of  "
+                    f"'{self.filter_name}': the half-maximum "
+                    "crossings do not bracket the mean wavelength.",
+                )
 
-            filt_fwhm = root2 - root1
-
-        else:
-            filt_fwhm = None
+            else:
+                filt_fwhm = right.min() - left.max()
 
         return filt_fwhm
 

@@ -646,6 +646,10 @@ def create_box(boxtype, **kwargs):
             box.spectrum = kwargs["spectrum"]
         if "model_name" in kwargs:
             box.model_name = kwargs["model_name"]
+        if "chi2" in kwargs:
+            box.chi2 = kwargs["chi2"]
+        if "n_dof" in kwargs:
+            box.n_dof = kwargs["n_dof"]
         if "chi2_red" in kwargs:
             box.chi2_red = kwargs["chi2_red"]
 

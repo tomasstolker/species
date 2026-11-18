@@ -1,64 +1,120 @@
 {
+    "HD 135344 Ab": {
+        "SPHERE_YJ": [
+            "hd135344ab_sphere_yj.dat",
+            null,
+            50.0,
+            "Stolker et al. 2025, A&A, 700, 21"
+        ],
+        "SPHERE_YJH": [
+            "hd135344ab_sphere_yjh.dat",
+            null,
+            30.0,
+            "Stolker et al. 2025, A&A, 700, 21"
+        ]
+    },
     "beta Pic b": {
         "GPI_YJHK": [
             "betapicb_gpi_yjhk.dat",
             null,
             40.0,
             "Chilcote et al. 2017, AJ, 153, 182"
-        ],
-        "GRAVITY": [
-            "BetaPictorisb_2018-09-22.fits",
-            "BetaPictorisb_2018-09-22.fits",
-            500.0,
-            "Gravity Collaboration et al. 2020, A&A, 633, 110"
         ]
     },
     "51 Eri b": {
         "SPHERE_YJH": [
             "51erib_sphere_yjh.dat",
             null,
-            25.0,
+            30.0,
             "Samland et al. 2017, A&A, 603, 57"
+        ]
+    },
+    "AF Lep b": {
+        "SPHERE_YJH": [
+            "aflepb_sphere_yjh.dat",
+            null,
+            30.0,
+            "Balmer et al. 2025, AJ, 169, 30"
         ]
     },
     "HD 206893 B": {
         "SPHERE_YJH": [
             "hd206893b_sphere_yjh.dat",
             null,
-            25.0,
+            30.0,
             "Delorme et al. 2017, A&A, 608, 79"
         ]
     },
-    "HD 206893 c": {
-        "GRAVITY": [
-            "HD206893C_GRAVITYK_fluxcal_spectrum.fits",
-            "HD206893C_GRAVITYK_fluxcal_spectrum.fits",
-            500.0,
-            "2023A&A...671L...5H"
+    "HR 8799 b": {
+        "OSIRIS_HK": [
+            "hr8799b_osiris_hk.dat",
+            null,
+            60.0,
+            "Barman et al. 2011, ApJ, 733, 65"
         ]
     },
-    "HIP 65426 B": {
-        "SPHERE_YJH": [
-            "hip65426b_sphere_yjh.dat",
+    "HR 8799 c": {
+        "P1640_YJH": [
+            "hr8799c_p1640_yjh.dat",
             null,
-            25.0,
-            "Cheetham et al. 2019, A&A, 622, 80"
+            35.0,
+            "Pueyo et al. 2015, ApJ, 803, 31"
+        ]
+    },
+    "HR 8799 d": {
+        "SPHERE_YJH": [
+            "hr8799d_sphere_yjh.dat",
+            null,
+            30.0,
+            "Zurlo et al. 2016, A&A, 587, A57"
         ]
     },
     "HR 8799 e": {
         "SPHERE_YJH": [
             "hr8799e_sphere_yjh.dat",
             null,
-            25.0,
-            "Zurlo et al. 2016, A&A, 587, 57"
+            30.0,
+            "Zurlo et al. 2016, A&A, 587, A57"
         ]
     },
     "PDS 70 b": {
         "SPHERE_YJH": [
             "pds70b_sphere_yjh.dat",
             null,
-            25.0,
+            30.0,
             "M\u00fcller et al. 2018, A&A, 617, 2"
+        ]
+    },
+    "PDS 70 c": {
+        "SPHERE_YJH": [
+            "pds70c_sphere_yjh.dat",
+            null,
+            30.0,
+            "Wang et al. 2021, AJ, 161, 148"
+        ]
+    },
+    "HIP 39017 B": {
+        "CHARIS_JHK": [
+            "hip39017b_charis_jhk.dat",
+            null,
+            20.0,
+            "Tobin et al. 2024, AJ, 167, 205"
+        ]
+    },
+    "HIP 99770 b": {
+        "CHARIS_YJH": [
+            "hip9970_charis_yjh.dat",
+            null,
+            20.0,
+            "Currie et al. 2023, Science, 380, 198\u2013203"
+        ]
+    },
+    "PZ Tel B": {
+        "SPHERE_YJH": [
+            "pztelb_sphere_yjh.dat",
+            null,
+            30.0,
+            "Maire et al. 2016, A&A, 587, A56"
         ]
     },
     "GQ Lup B": {
