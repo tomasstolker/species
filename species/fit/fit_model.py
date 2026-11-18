@@ -3657,8 +3657,9 @@ class FitModel:
     def run_emcee(
         self,
         tag,
-        nwalkers: int,
-        nsteps: int,
+        nwalkers: int = 32,
+        nwarmup: int = 1000,
+        nsteps: int = 1000,
         guess: Union[Dict[str, Real], Dict[str, None], None] = None,
         n_pool: Optional[int] = None,
         mpi_pool: bool = False,
@@ -3719,10 +3720,10 @@ class FitModel:
             pool = None
         try:
             sampler = emcee.EnsembleSampler(nwalkers, ndim, self._lnprob_func, pool=pool)
-            sampler.run_mcmc(initial, nsteps, progress=True)
+            sampler.run_mcmc(initial, nwarmup + nsteps, progress=True)
 
-            samples = sampler.get_chain(flat=True)
-            ln_prob = sampler.get_log_prob(flat=True)
+            samples = sampler.get_chain(flat=True, discard=nwarmup)
+            ln_prob = sampler.get_log_prob(flat=True, discard=nwarmup)
 
         finally:
             if pool is not None:
