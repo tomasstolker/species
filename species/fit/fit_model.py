@@ -3654,16 +3654,48 @@ class FitModel:
                 attr_dict=self._create_attr_dict(),
             )
 
+    @beartype
     def run_emcee(
         self,
-        tag,
+        tag: str,
         nwalkers: int = 32,
         nwarmup: int = 1000,
         nsteps: int = 1000,
         guess: Union[Dict[str, Real], Dict[str, None], None] = None,
         n_pool: Optional[int] = None,
         mpi_pool: bool = False,
-    ):
+    ) -> None:
+        """
+        Function for running the fit with a grid of model spectra.
+        The parameter estimation is done with ``emcee``.
+
+        When using MPI, it is also required to install ``mpi4py`` (e.g.
+        ``pip install mpi4py``), otherwise an error may occur when the
+        ``output_folder`` is created by multiple processes.
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the samples will be stored.
+        nwalkers : int
+            Number of walkers (chains) in the MCMC. Defaults to 32.
+        nwarmup : int
+            Number of warm-up (burn-in) steps in the MCMC.
+            These steps are discarded. Defaults to 1000.
+        nsteps : int
+            Number of sampling steps in the MCMC. Defaults to 1000.
+        guess : dict, None
+            First guess to inialize the MCMC chains.
+            If provided, the walkers are initialized in a small
+            gaussian ball around this point. Otherwise, they are
+            initialized across the prior. Defaults to ``None``.
+        n_pool : int, None
+            The number of processes for the local multiprocessing. The
+            parameter is not used when the argument is set to ``None``.
+        mpi_pool : bool
+            Distribute the workers to an ``MPIPool`` on a cluster,
+            using ``schwimmbad``.
+        """
         ndim = len(self.modelpar)
 
         guess = guess or {}
