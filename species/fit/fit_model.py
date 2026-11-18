@@ -1633,7 +1633,6 @@ class FitModel:
                 spec_labels.append(f"scaling_{spec_item}")
         return spec_labels
 
-
     @beartype
     def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
@@ -2722,8 +2721,6 @@ class FitModel:
 
         return attr_dict
 
-
-
     @beartype
     def run_multinest(
         self,
@@ -2970,7 +2967,6 @@ class FitModel:
         # Get the posterior samples
 
         post_samples = analyzer.get_equal_weighted_posterior()
-
 
         # Samples and ln(L)
 
@@ -3721,9 +3717,7 @@ class FitModel:
                         abs(guess[item] - self.bounds[item][0]),
                         abs(guess[item] - self.bounds[item][1]),
                     )
-                    initial[:, i] = guess[item] + rng.normal(
-                        0, 0.1 * width, nwalkers
-                    )
+                    initial[:, i] = guess[item] + rng.normal(0, 0.1 * width, nwalkers)
                 else:
                     initial[:, i] = guess[item] + rng.normal(
                         0, 0.1 * self.normal_prior[item][1], nwalkers
@@ -3740,7 +3734,6 @@ class FitModel:
                     low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
                 )
 
-
         if mpi_pool:
             pool = MPIPool()
             if not pool.is_master():
@@ -3751,7 +3744,9 @@ class FitModel:
         else:
             pool = None
         try:
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, self._lnprob_func, pool=pool)
+            sampler = emcee.EnsembleSampler(
+                nwalkers, ndim, self._lnprob_func, pool=pool
+            )
             sampler.run_mcmc(initial, nwarmup + nsteps, progress=True)
 
             samples = sampler.get_chain(flat=True, discard=nwarmup)
@@ -3770,7 +3765,6 @@ class FitModel:
                 np.full((samples.shape[0], 1), param_value),
                 axis=1,
             )
-
 
         try:
             from mpi4py import MPI
