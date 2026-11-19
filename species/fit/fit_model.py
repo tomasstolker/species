@@ -2626,6 +2626,54 @@ class FitModel:
         return -0.5 * ln_like
 
     @beartype
+    def _lnprior_func(self, params) -> Real:
+        lnp = 0.0
+
+        for item in self.modelpar:
+            pval = params[self.cube_index[item]]
+
+            if item in self.bounds:
+                low, high = self.bounds[item]
+
+                if not (low <= pval <= high):
+                    return -np.inf
+
+            if item in self.normal_prior:
+                loc, scale = self.normal_prior[item]
+
+                if item in self.bounds:
+                    low, high = self.bounds[item]
+                    a_trunc = (low - loc) / scale
+                    b_trunc = (high - loc) / scale
+                    lnp_i = truncnorm.logpdf(
+                        pval,
+                        a_trunc,
+                        b_trunc,
+                        loc=loc,
+                        scale=scale,
+                    )
+
+                else:
+                    lnp_i = norm.logpdf(pval, loc=loc, scale=scale)
+
+            else:
+                low, high = self.bounds[item]
+                lnp_i = -np.log(high - low)
+
+            lnp += lnp_i
+
+        return lnp
+
+    @beartype
+    def _lnprob_func(self, params) -> Real:
+        lnp = self._lnprior_func(params)
+
+        if not np.isfinite(lnp):
+            return -np.inf
+
+        return lnp + self._lnlike_func(params)
+
+    @beartype
     def _create_attr_dict(self):
         """
         Internal function for creating a dictionary with attributes
