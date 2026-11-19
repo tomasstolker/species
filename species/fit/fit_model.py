@@ -1789,7 +1789,10 @@ class FitModel:
         # spectrum_interp because it creates a list in
         # the order of the keys in param_dict
 
-        if self.param_interp is not None:
+        if self.model == "powerlaw":
+            param_dict = all_param
+
+        elif self.param_interp is not None:
             param_dict = {}
             for param_item in self.param_interp:
                 param_dict[param_item] = all_param[param_item]
