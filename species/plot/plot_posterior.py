@@ -159,17 +159,17 @@ def plot_posterior(
     print(f"Manual parameters: {param_inc}\n")
 
     if "model_type" in box.attributes:
-        print((f"Model type: {box.attributes['model_type']}"))
+        print(f"Model type: {box.attributes['model_type']}")
     elif "spec_type" in box.attributes:
-        print((f"Model type: {box.attributes['spec_type']}"))
+        print(f"Model type: {box.attributes['spec_type']}")
 
     if "model_name" in box.attributes:
-        print((f"Model name: {box.attributes['model_name']}"))
+        print(f"Model name: {box.attributes['model_name']}")
     elif "spec_name" in box.attributes:
-        print((f"Model type: {box.attributes['spec_name']}"))
+        print(f"Model type: {box.attributes['spec_name']}")
 
     if "sampler" in box.attributes:
-        print((f"Sampler: {box.attributes['sampler']}"))
+        print(f"Sampler: {box.attributes['sampler']}")
 
     print(f"\nShow priors: {show_priors}")
     print(f"Show grid: {show_grid}")
@@ -250,36 +250,39 @@ def plot_posterior(
     if "abund_nodes" not in box.attributes:
         box.attributes["abund_nodes"] = "None"
 
-    if box.model_name == "petitradtrans" and box.attributes["chemistry"] == "free":
-        if box.attributes["abund_nodes"] == "None":
-            box.parameters.append("c_h_ratio")
-            box.parameters.append("o_h_ratio")
-            box.parameters.append("c_o_ratio")
+    if (
+        box.model_name == "petitradtrans"
+        and box.attributes["chemistry"] == "free"
+        and box.attributes["abund_nodes"] == "None"
+    ):
+        box.parameters.append("c_h_ratio")
+        box.parameters.append("o_h_ratio")
+        box.parameters.append("c_o_ratio")
 
-            ndim += 3
+        ndim += 3
 
-            abund_index = {}
+        abund_index = {}
 
+        for line_item in line_species:
+            abund_index[line_item] = box.parameters.index(line_item)
+
+        c_h_ratio = np.zeros(samples.shape[0])
+        o_h_ratio = np.zeros(samples.shape[0])
+        c_o_ratio = np.zeros(samples.shape[0])
+
+        for i, sample_item in enumerate(samples):
+            abund_dict = {}
             for line_item in line_species:
-                abund_index[line_item] = box.parameters.index(line_item)
+                abund_dict[line_item] = sample_item[abund_index[line_item]]
 
-            c_h_ratio = np.zeros(samples.shape[0])
-            o_h_ratio = np.zeros(samples.shape[0])
-            c_o_ratio = np.zeros(samples.shape[0])
-
-            for i, sample_item in enumerate(samples):
-                abund_dict = {}
-                for line_item in line_species:
-                    abund_dict[line_item] = sample_item[abund_index[line_item]]
-
-                (
-                    c_h_ratio[i],
-                    o_h_ratio[i],
-                    c_o_ratio[i],
-                ) = calc_metal_ratio(
-                    abund_dict,
-                    line_species,
-                )
+            (
+                c_h_ratio[i],
+                o_h_ratio[i],
+                c_o_ratio[i],
+            ) = calc_metal_ratio(
+                abund_dict,
+                line_species,
+            )
 
     if (
         vmr
@@ -845,16 +848,19 @@ def plot_posterior(
     # Only for fitting evolutionary models
     # Remove index from parameter names when fitting 1 planet
 
-    if "model_type" in box.attributes and box.attributes["model_type"] == "evolution":
-        if box.attributes["n_planets"] == 1:
-            param_copy = box.parameters.copy()
-            box.parameters = []
+    if (
+        "model_type" in box.attributes
+        and box.attributes["model_type"] == "evolution"
+        and box.attributes["n_planets"] == 1
+    ):
+        param_copy = box.parameters.copy()
+        box.parameters = []
 
-            for param_item in param_copy:
-                if param_item[-2:] == "_0":
-                    box.parameters.append(param_item[:-2])
-                else:
-                    box.parameters.append(param_item)
+        for param_item in param_copy:
+            if param_item[-2:] == "_0":
+                box.parameters.append(param_item[:-2])
+            else:
+                box.parameters.append(param_item)
 
     # Parameters to be included in the corner plot
 
@@ -917,10 +923,10 @@ def plot_posterior(
         q_minus, q_plus = q_50 - q_16, q_84 - q_50
 
         if isinstance(title_fmt, str):
-            fmt = "{{0:{0}}}".format(title_fmt).format
+            fmt = f"{{0:{title_fmt}}}".format
 
         elif isinstance(title_fmt, list):
-            fmt = "{{0:{0}}}".format(title_fmt[i]).format
+            fmt = f"{{0:{title_fmt[i]}}}".format
 
         best_fit = r"${{{0}}}_{{-{1}}}^{{+{2}}}$"
         best_fit = best_fit.format(fmt(q_50), fmt(q_minus), fmt(q_plus))
