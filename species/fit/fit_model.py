@@ -58,6 +58,7 @@ from species.util.model_util import (
 
 warnings.filterwarnings("always", category=DeprecationWarning)
 
+
 def truncnorm_logprob(x: Union[float, np.ndarray], low, high, mu, sigma) -> np.ndarray:
     """Log probability density function.
 
@@ -66,9 +67,7 @@ def truncnorm_logprob(x: Union[float, np.ndarray], low, high, mu, sigma) -> np.n
     """
     phi_low = 0.5 * (1 + erf((low - mu) / sigma / np.sqrt(2)))
     phi_high = 0.5 * (1 + erf((high - mu) / sigma / np.sqrt(2)))
-    log_norm = -0.5 * (
-        np.log(2 * np.pi * sigma**2) + ((x - mu) / sigma) ** 2
-    )
+    log_norm = -0.5 * (np.log(2 * np.pi * sigma**2) + ((x - mu) / sigma) ** 2)
     lp = np.where(
         np.logical_and(np.greater_equal(x, low), np.less(x, high)),
         log_norm - np.log(phi_high - phi_low),
@@ -77,7 +76,6 @@ def truncnorm_logprob(x: Union[float, np.ndarray], low, high, mu, sigma) -> np.n
     if lp.ndim == 0:
         return lp.item()
     return lp
-
 
 
 class FitModel:
@@ -1633,7 +1631,9 @@ class FitModel:
                 print(f"   - {filter_item} = {self.weights[filter_item]:.2e}")
 
     @beartype
-    def _prior_transform(self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]):
+    def _prior_transform(
+        self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
+    ):
         warnings.warn(
             "_prior_transform is deprecated, use prior_transform instead",
             category=DeprecationWarning,
@@ -1775,12 +1775,15 @@ class FitModel:
 
         if self.model == "planck" and self.n_planck > 1:
             for planck_idx in range(self.n_planck - 1):
-                if all_param[f"teff_{planck_idx+1}"] > all_param[f"teff_{planck_idx}"]:
+                if (
+                    all_param[f"teff_{planck_idx + 1}"]
+                    > all_param[f"teff_{planck_idx}"]
+                ):
                     return -np.inf
 
                 if (
                     all_param[f"radius_{planck_idx}"]
-                    > all_param[f"radius_{planck_idx+1}"]
+                    > all_param[f"radius_{planck_idx + 1}"]
                 ):
                     return -np.inf
 
@@ -1805,13 +1808,13 @@ class FitModel:
                 else:
                     if (
                         all_param[f"disk_teff_{disk_idx}"]
-                        > all_param[f"disk_teff_{disk_idx-1}"]
+                        > all_param[f"disk_teff_{disk_idx - 1}"]
                     ):
                         return -np.inf
 
                     if (
                         all_param[f"disk_radius_{disk_idx}"]
-                        < all_param[f"disk_radius_{disk_idx-1}"]
+                        < all_param[f"disk_radius_{disk_idx - 1}"]
                     ):
                         return -np.inf
 
@@ -2256,7 +2259,6 @@ class FitModel:
         # Compare spectra with model
 
         for spec_idx, spec_item in enumerate(self.spectrum.keys()):
-
             if self.model == "planck":
                 # Calculate a blackbody spectrum from the sampled parameters
 
@@ -2669,7 +2671,7 @@ class FitModel:
 
     @beartype
     def lnprior(self, params) -> Real:
-        """"
+        """ "
         Function for calculating the log-prior of the model at a sampled
         point. The priors are taken from ``FitModel.normal_prior`` and
         ``FitModel.bounds``.
@@ -2703,7 +2705,9 @@ class FitModel:
                     lnp_i = truncnorm_logprob(pval, low, high, loc, scale)
 
                 else:
-                    lnp_i = -0.5 * ( np.log(2 * np.pi * scale**2) + ((pval - loc) / scale) ** 2)
+                    lnp_i = -0.5 * (
+                        np.log(2 * np.pi * scale**2) + ((pval - loc) / scale) ** 2
+                    )
 
             else:
                 low, high = self.bounds[item]
@@ -3457,8 +3461,7 @@ class FitModel:
                             )
 
                             print(
-                                "Resumed a Dynesty run from "
-                                f"{out_basename}dynesty.save"
+                                f"Resumed a Dynesty run from {out_basename}dynesty.save"
                             )
 
                         else:
@@ -3486,8 +3489,7 @@ class FitModel:
                             )
 
                             print(
-                                "Resumed a Dynesty run from "
-                                f"{out_basename}dynesty.save"
+                                f"Resumed a Dynesty run from {out_basename}dynesty.save"
                             )
 
                         else:
