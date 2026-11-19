@@ -35,7 +35,6 @@ from beartype.typing import Dict, List, Optional, Tuple, Union
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
 from scipy.special import erf, erfinv
-from scipy.stats import norm, truncnorm
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
@@ -1685,24 +1684,16 @@ class FitModel:
                     low, high = bounds[param_item]
                     # Truncated normal prior
 
-                    # The truncation values are given in number of
-                    # standard deviations relative to the mean
-                    # of the normal distribution
-
-                    a_trunc = (low - loc) / scale
-
-                    b_trunc = (high - loc) / scale
-
-                    param_out[cube_index[param_item]] = truncnorm.ppf(
-                        u, a_trunc, b_trunc, loc=loc, scale=scale
-                    )
-
+                    a = erf((low - loc) / (scale * np.sqrt(2)))
+                    b = erf((high - loc) / (scale * np.sqrt(2)))
+                    param_out[cube_index[param_item]] = loc + scale * np.sqrt(
+                        2
+                    ) * erfinv((1 - u) * a + u * b)
                 else:
                     # Normal prior
-
-                    param_out[cube_index[param_item]] = norm.ppf(
-                        u, loc=loc, scale=scale
-                    )
+                    param_out[cube_index[param_item]] = loc + scale * np.sqrt(
+                        2
+                    ) * erfinv(2 * u - 1)
 
             else:
                 # Uniform prior
