@@ -28,10 +28,10 @@ species.plot.plot\_evolution module
    :show-inheritance:
    :undoc-members:
 
-species.plot.plot\_mcmc module
-------------------------------
+species.plot.plot\_posterior module
+-----------------------------------
 
-.. automodule:: species.plot.plot_mcmc
+.. automodule:: species.plot.plot_posterior
    :members:
    :show-inheritance:
    :undoc-members:

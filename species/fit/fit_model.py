@@ -299,7 +299,7 @@ class FitModel:
                  the photometric fluxes are dominated by continuum
                  emission while spectral lines are ignored.
 
-               - The :func:`~species.plot.plot_mcmc.plot_mag_posterior`
+               - The :func:`~species.plot.plot_posterior.plot_mag_posterior`
                  function can be used for calculating synthetic
                  photometry and error bars from the posterior
                  distributions.
