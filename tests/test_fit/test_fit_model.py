@@ -97,6 +97,25 @@ class TestFitModel:
         assert fit.lnprior(params) == pytest.approx(expected)
 
     @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
+    def test_prior_transform(self, fit_model_database, fixed):
+        fit = create_fit_model(fixed=fixed)
+        cube = np.array([0.2, 0.5] + ([] if fixed else [0.75]))
+        cube_input = cube.copy()
+
+        expected = np.array(
+            [
+                norm.ppf(0.2, loc=0.0, scale=0.5),
+                truncnorm.ppf(0.5, -3.0, 3.0, loc=0.0, scale=1.0),
+            ]
+            + ([] if fixed else [0.5 + 1.5 * 0.75])
+        )
+
+        transformed = fit.prior_transform(cube, fit.bounds, fit.cube_index)
+
+        assert np.array_equal(cube, cube_input)
+        assert transformed == pytest.approx(expected)
+
+    @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_multinest(self, fit_model_database, monkeypatch, fixed):
         if not hasattr(fit_model, "pymultinest"):
             pytest.skip("PyMultiNest is not available")
