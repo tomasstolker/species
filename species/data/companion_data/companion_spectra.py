@@ -3,6 +3,7 @@ Module for getting spectra of directly imaged planets and brown dwarfs.
 """
 
 import json
+import warnings
 
 from io import BytesIO
 from pathlib import Path
@@ -41,7 +42,7 @@ GRAVITY_TARGETS = {
     "HD 206893 c": "HD206893_c",
     "HIP 64892 B": "HIP64892_b",
     "HIP 65426 b": "HIP65426_b",
-    "HIP 75056 b": "HIP75056_b",
+    "HD 136164 Ab": "HIP75056_b",
     "HIP 79098 b": "HIP79098_b",
     "HIP 99770 b": "HIP99770_b",
     "HR 2562 b": "HR2562_b",
@@ -152,7 +153,7 @@ def companion_spectra(
 
         if gravity_target is not None:
             if verbose:
-                print(f"Getting combined GRAVITY spectrum of {comp_name}...")
+                print(f"Getting GRAVITY spectrum of {comp_name}...")
 
             archive = data_folder / "ExoGRAVITY_Spectral_Library.zip"
 
@@ -184,6 +185,12 @@ def companion_spectra(
                     "Please cite Kammerer et al. 2025, A&A, 704, A318 "
                     "when making use of this spectrum in a publication"
                 )
+
+            warnings.warn(
+                "The absolute flux calibration of the GRAVITY spectra "
+                "in the ExoGRAVITY spectral library can be off by "
+                "+/-20%. See Kammerer et al. (2025) for details."
+            )
 
     else:
         spec_dict = None

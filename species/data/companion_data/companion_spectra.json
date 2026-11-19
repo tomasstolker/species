@@ -82,7 +82,7 @@
             "pds70b_sphere_yjh.dat",
             null,
             30.0,
-            "M\u00fcller et al. 2018, A&A, 617, 2"
+            "Müeller et al. 2018, A&A, 617, 2"
         ]
     },
     "PDS 70 c": {
@@ -101,12 +101,28 @@
             "Tobin et al. 2024, AJ, 167, 205"
         ]
     },
+    "HIP 54515 b": {
+        "CHARIS_JHK": [
+            "hip54515b_charis_jhk.dat",
+            null,
+            18.0,
+            "Currie et al. 2026, AJ, 171, 5"
+        ]
+    },
     "HIP 99770 b": {
         "CHARIS_YJH": [
-            "hip9970_charis_yjh.dat",
+            "hip99770b_charis_yjh.dat",
             null,
             20.0,
-            "Currie et al. 2023, Science, 380, 198\u2013203"
+            "Currie et al. 2023, Science, 380, 198"
+        ]
+    },
+    "HD 136164 Ab": {
+        "SPHERE_YJH": [
+            "hd136164ab_sphere_yjh.dat",
+            null,
+            30.0,
+            "Wagner et al. 2020, ApJL, 902, L6"
         ]
     },
     "PZ Tel B": {

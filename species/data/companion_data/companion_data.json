@@ -364,6 +364,31 @@
             "Stolker et al. 2020a"
         ]
     },
+    "HIP 54515 b": {
+        "simbad": "* 66 Leo",
+        "parallax": [
+            12.0377,
+            0.0292
+        ],
+        "semi_major": [
+            24.8,
+            -4.7,
+            7.2
+        ],
+        "mass_star": [
+            1.90,
+            0.20
+        ],
+        "mass_companion": [
+            17.7,
+            7.6
+        ],
+        "accretion": false,
+        "references": [
+            "Currie et al. 2026",
+            "Gaia Data Release 3"
+        ]
+    },
     "HIP 99770 b": {
         "simbad": "* b03 Cyg",
         "gaia_dr3": 2060523518197844608,
@@ -382,7 +407,6 @@
         ],
         "mass_companion": [
             16.1,
-            -5.0,
             5.4
         ],
         "accretion": false,
@@ -420,8 +444,7 @@
         ],
         "mass_companion": [
             30.0,
-            -12.0,
-            31.0
+            20.0
         ],
         "accretion": false,
         "age": [
@@ -430,6 +453,7 @@
             0.0
         ],
         "references": [
+            "Gaia Early Data Release 3",
             "Tobin et al. 2024"
         ]
     },
@@ -1307,7 +1331,6 @@
         ],
         "mass_companion": [
             12.7,
-            -1.0,
             1.2
         ],
         "accretion": false,
@@ -3107,6 +3130,69 @@
         "references": [
             "Gaia Early Data Release 3",
             "Gauza et al. 2015"
+        ]
+    },
+    "HD 284149 ABb": {
+        "simbad": "HD 284149",
+        "parallax": [
+            8.5118,
+            0.0181
+        ],
+        "app_mag": {
+            "Gemini/NIRI.J-G0202w": [
+                15.516,
+                0.043
+            ],
+            "Gemini/NIRI.H-G0203w": [
+                14.715,
+                0.047
+            ],
+            "Gemini/NIRI.K-G0204w": [
+                14.332,
+                0.040
+            ]
+        },
+        "semi_major": [
+            431.0,
+            7.0
+        ],
+        "mass_star": [
+            1.13,
+            0.06
+        ],
+        "mass_companion": [
+            28.26,
+            1.00
+        ],
+        "accretion": false,
+        "references": [
+            "Bonavita et al. 2017",
+            "Gaia Early Data Release 3",
+            "Hoch et al. 2023"
+        ]
+    },
+    "HD 136164 Ab": {
+        "simbad": "HD 136164",
+        "parallax": [
+            8.2028,
+            0.0401
+        ],
+        "semi_major": [
+            22.48,
+            1.15
+        ],
+        "mass_star": [
+            1.87,
+            0.07
+        ],
+        "mass_companion": [
+            34.9,
+            9.9
+        ],
+        "accretion": false,
+        "references": [
+            "Balmer et al. 2024",
+            "Gaia Early Data Release 3"
         ]
     }
 }

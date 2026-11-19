@@ -301,6 +301,11 @@ def get_residuals(
             DeprecationWarning,
         )
 
+    # Check if model_name is needed
+
+    if tag is None and model_name is None:
+        raise ValueError("The argument of 'model_name' should be set when 'tag=None'.")
+
     # Read sampling results
 
     print_section("Calculate residuals")
