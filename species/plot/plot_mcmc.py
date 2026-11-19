@@ -1173,7 +1173,7 @@ def plot_mag_posterior(
 
     species_db = Database()
 
-    samples = species_db.get_mcmc_photometry(tag, filter_name, random=n_samples)
+    samples = species_db.get_posterior_photometry(tag, filter_name, random=n_samples)
 
     fig = corner.corner(
         samples,

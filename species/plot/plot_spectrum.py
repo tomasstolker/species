@@ -110,7 +110,7 @@ def plot_spectrum(
         Plot an envelope instead of the individual samples in case
         the list of ``boxes`` contains a list with
         :class:`~species.core.box.ModelBox` objects from
-        :func:`~species.data.database.Database.get_mcmc_spectra`
+        :func:`~species.data.database.Database.get_posterior_spectra`
         or :func:`~species.data.database.Database.get_retrieval_spectra`.
         The envelopes show the 68 and 99.7 percent confidence intervals,
         so :math:`1\\sigma` and :math:`3\\sigma` in case of Gaussian
