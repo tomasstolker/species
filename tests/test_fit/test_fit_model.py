@@ -94,7 +94,7 @@ class TestFitModel:
             + (0.0 if fixed else -np.log(1.5))
         )
 
-        assert fit._lnprior_func(params) == pytest.approx(expected)
+        assert fit.lnprior(params) == pytest.approx(expected)
 
     @pytest.mark.parametrize("fixed", [False, True], ids=["free", "fixed"])
     def test_run_multinest(self, fit_model_database, monkeypatch, fixed):

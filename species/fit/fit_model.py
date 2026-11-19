@@ -1612,7 +1612,16 @@ class FitModel:
                 print(f"   - {filter_item} = {self.weights[filter_item]:.2e}")
 
     @beartype
-    def _prior_transform(
+    def _prior_transform(self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]):
+        warnings.warn(
+            "_prior_transform is deprecated, use prior_transform instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.prior_transform(cube, bounds, cube_index)
+
+    @beartype
+    def prior_transform(
         self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
     ):
         """
@@ -1693,7 +1702,16 @@ class FitModel:
         return param_out
 
     @beartype
-    def _lnlike_func(
+    def _lnlike_func(self, params) -> Real:
+        warnings.warn(
+            "_lnlike_func is deprecated, use lnlike instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.lnlike(params)
+
+    @beartype
+    def lnlike(
         self,
         params,
     ) -> Real:
@@ -2629,7 +2647,22 @@ class FitModel:
         return -0.5 * ln_like
 
     @beartype
-    def _lnprior_func(self, params) -> Real:
+    def lnprior(self, params) -> Real:
+        """"
+        Function for calculating the log-prior of the model at a sampled
+        point. The priors are taken from ``FitModel.normal_prior`` and
+        ``FitModel.bounds``.
+
+        Parameters
+        ----------
+        params : np.ndarray
+            Cube with sampled model parameters
+
+        Returns
+        -------
+        float
+            Log-prior
+        """
         lnp = 0.0
 
         for item in self.modelpar:
@@ -2668,13 +2701,28 @@ class FitModel:
         return lnp
 
     @beartype
-    def _lnprob_func(self, params) -> Real:
-        lnp = self._lnprior_func(params)
+    def lnprob(self, params) -> Real:
+        """
+        Function for calculating the log-posterior probability of
+        the model at a sampled point. It calls :meth:`lnprior` and
+        :meth:`lnlike` internally.
+
+        Parameters
+        ----------
+        params : np.ndarray
+            Cube with sampled model parameters
+
+        Returns
+        -------
+        float
+            Log-posterior
+        """
+        lnp = self.lnprior(params)
 
         if not np.isfinite(lnp):
             return -np.inf
 
-        return lnp + self._lnlike_func(params)
+        return lnp + self.lnlike(params)
 
     @beartype
     def _create_attr_dict(self):
@@ -2850,7 +2898,7 @@ class FitModel:
                 None
             """
 
-            self._prior_transform(cube, self.bounds, self.cube_index)
+            self.prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
         def _lnlike_multinest(params, n_dim: int, n_param: int) -> Real:
@@ -2875,7 +2923,7 @@ class FitModel:
                 Log-likelihood.
             """
 
-            return self._lnlike_func(params)
+            return self.lnlike(params)
 
         pymultinest.run(
             _lnlike_multinest,
@@ -3123,7 +3171,7 @@ class FitModel:
                 Cube with the sampled model parameters.
             """
 
-            return self._prior_transform(cube, self.bounds, self.cube_index)
+            return self.prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
         def _lnlike_ultranest(params: np.ndarray) -> Real:
@@ -3142,7 +3190,7 @@ class FitModel:
                 Log-likelihood.
             """
 
-            ln_like = self._lnlike_func(params)
+            ln_like = self.lnlike(params)
 
             if not np.isfinite(ln_like):
                 # UltraNest cannot handle np.inf in the likelihood
@@ -3382,8 +3430,8 @@ class FitModel:
             if n_pool is not None:
                 with dynesty.pool.Pool(
                     n_pool,
-                    self._lnlike_func,
-                    self._prior_transform,
+                    self.lnlike,
+                    self.prior_transform,
                     ptform_args=[self.bounds, self.cube_index],
                 ) as pool:
                     print(f"Initialized a Dynesty.pool with {n_pool} workers")
@@ -3456,8 +3504,8 @@ class FitModel:
 
                     else:
                         dsampler = dynesty.DynamicNestedSampler(
-                            loglikelihood=self._lnlike_func,
-                            prior_transform=self._prior_transform,
+                            loglikelihood=self.lnlike,
+                            prior_transform=self.prior_transform,
                             ndim=len(self.modelpar),
                             ptform_args=[self.bounds, self.cube_index],
                             sample=sample_method,
@@ -3481,8 +3529,8 @@ class FitModel:
 
                     else:
                         dsampler = dynesty.NestedSampler(
-                            loglikelihood=self._lnlike_func,
-                            prior_transform=self._prior_transform,
+                            loglikelihood=self.lnlike,
+                            prior_transform=self.prior_transform,
                             ndim=len(self.modelpar),
                             ptform_args=[self.bounds, self.cube_index],
                             sample=sample_method,
@@ -3513,8 +3561,8 @@ class FitModel:
 
                 else:
                     dsampler = dynesty.DynamicNestedSampler(
-                        loglikelihood=self._lnlike_func,
-                        prior_transform=self._prior_transform,
+                        loglikelihood=self.lnlike,
+                        prior_transform=self.prior_transform,
                         ndim=len(self.modelpar),
                         ptform_args=[self.bounds, self.cube_index],
                         pool=pool,
@@ -3538,8 +3586,8 @@ class FitModel:
 
                 else:
                     dsampler = dynesty.NestedSampler(
-                        loglikelihood=self._lnlike_func,
-                        prior_transform=self._prior_transform,
+                        loglikelihood=self.lnlike,
+                        prior_transform=self.prior_transform,
                         ndim=len(self.modelpar),
                         ptform_args=[self.bounds, self.cube_index],
                         pool=pool,
