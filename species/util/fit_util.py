@@ -682,3 +682,21 @@ def get_residuals(
         n_dof=n_dof,
         chi2_red=chi2_red,
     )
+
+
+@beartype
+def get_fixed_indices(samples: np.ndarray) -> List[int]:
+    ndim = samples.shape[-1]
+    index_fix = [
+        i for i in range(ndim) if np.amin(samples[..., i]) == np.amax(samples[..., i])
+    ]
+    return index_fix
+
+
+@beartype
+def get_vary_indices(samples: np.ndarray) -> List[int]:
+    ndim = samples.shape[-1]
+    index_vary = [
+        i for i in range(ndim) if np.amin(samples[..., i]) != np.amax(samples[..., i])
+    ]
+    return index_vary

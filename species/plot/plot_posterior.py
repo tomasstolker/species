@@ -26,6 +26,7 @@ from species.util.dust_util import (
     log_normal_distribution,
     power_law_distribution,
 )
+from species.util.fit_util import get_fixed_indices, get_vary_indices
 from species.util.plot_util import update_labels
 from species.util.retrieval_util import (
     atomic_masses,
@@ -875,14 +876,8 @@ def plot_posterior(
 
     # Check if parameter values were fixed
 
-    index_sel = []
-    index_del = []
-
-    for i in range(ndim):
-        if np.amin(samples[:, i]) == np.amax(samples[:, i]):
-            index_del.append(i)
-        else:
-            index_sel.append(i)
+    index_sel = get_vary_indices(samples)
+    index_del = get_fixed_indices(samples)
 
     samples = samples[:, index_sel]
 
