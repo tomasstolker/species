@@ -3,14 +3,12 @@ Module for plotting posterior distributions and derived quantities.
 """
 
 import warnings
-
 from numbers import Real
 
 import corner
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
+import numpy as np
 from beartype import beartype
 from beartype.typing import List, Optional, Tuple, Union
 from matplotlib.ticker import ScalarFormatter
@@ -21,7 +19,6 @@ from species.read.read_isochrone import ReadIsochrone
 from species.read.read_model import ReadModel
 from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
-from species.util.plot_util import update_labels
 from species.util.dust_util import (
     interp_lognorm,
     interp_powerlaw,
@@ -29,6 +26,7 @@ from species.util.dust_util import (
     log_normal_distribution,
     power_law_distribution,
 )
+from species.util.plot_util import update_labels
 from species.util.retrieval_util import (
     atomic_masses,
     calc_metal_ratio,
