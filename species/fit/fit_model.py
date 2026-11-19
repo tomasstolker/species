@@ -5,7 +5,6 @@ Module with functionalities for fitting atmospheric model spectra.
 import os
 import sys
 import warnings
-
 from numbers import Real
 
 import dynesty
@@ -14,7 +13,7 @@ import numpy as np
 try:
     import ultranest
 
-except:
+except ModuleNotFoundError:
     warnings.warn(
         "UltraNest could not be imported. Perhaps "
         "because cython was not correctly compiled?"
@@ -23,7 +22,7 @@ except:
 try:
     import pymultinest
 
-except:
+except ModuleNotFoundError:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
@@ -32,17 +31,17 @@ except:
     )
 
 from beartype import beartype
-from beartype.typing import Optional, Union, List, Tuple, Dict
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
 from scipy.special import erf, erfinv
 from scipy.stats import norm, truncnorm
 
 from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
 from species.read.read_model import ReadModel
 from species.read.read_object import ReadObject
 from species.read.read_planck import ReadPlanck
-from species.read.read_filter import ReadFilter
 from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
 from species.util.dust_util import (
@@ -50,10 +49,10 @@ from species.util.dust_util import (
     interp_powerlaw,
 )
 from species.util.model_util import (
+    apply_obs,
     binary_to_single,
     check_nearest_spec,
     extract_disk_param,
-    apply_obs,
     powerlaw_spectrum,
 )
 
