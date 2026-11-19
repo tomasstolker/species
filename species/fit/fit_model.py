@@ -1678,47 +1678,37 @@ class FitModel:
             param_out = cube
 
         for param_item in cube_index:
+            u = param_out[cube_index[param_item]]
             if param_item in self.normal_prior:
+                loc, scale = self.normal_prior[param_item]
                 if param_item in bounds:
+                    low, high = bounds[param_item]
                     # Truncated normal prior
 
                     # The truncation values are given in number of
                     # standard deviations relative to the mean
                     # of the normal distribution
 
-                    a_trunc = (
-                        bounds[param_item][0] - self.normal_prior[param_item][0]
-                    ) / self.normal_prior[param_item][1]
+                    a_trunc = (low - loc) / scale
 
-                    b_trunc = (
-                        bounds[param_item][1] - self.normal_prior[param_item][0]
-                    ) / self.normal_prior[param_item][1]
+                    b_trunc = (high - loc) / scale
 
                     param_out[cube_index[param_item]] = truncnorm.ppf(
-                        param_out[cube_index[param_item]],
-                        a_trunc,
-                        b_trunc,
-                        loc=self.normal_prior[param_item][0],
-                        scale=self.normal_prior[param_item][1],
+                        u, a_trunc, b_trunc, loc=loc, scale=scale
                     )
 
                 else:
                     # Normal prior
 
                     param_out[cube_index[param_item]] = norm.ppf(
-                        param_out[cube_index[param_item]],
-                        loc=self.normal_prior[param_item][0],
-                        scale=self.normal_prior[param_item][1],
+                        u, loc=loc, scale=scale
                     )
 
             else:
                 # Uniform prior
 
-                param_out[cube_index[param_item]] = (
-                    bounds[param_item][0]
-                    + (bounds[param_item][1] - bounds[param_item][0])
-                    * param_out[cube_index[param_item]]
-                )
+                low, high = bounds[param_item]
+                param_out[cube_index[param_item]] = low + (high - low) * u
 
         return param_out
 
