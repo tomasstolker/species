@@ -4,9 +4,15 @@ calibration. The fitting routine  be used to fit photometric
 data with a calibration spectrum (e.g. extracted with
 :func:`~species.read.read_model.ReadModel.get_model`) by
 simply fitting a scaling parameter.
+
+.. deprecated::
+    The ``species.fit.fit_spectrum`` module is deprecated and will be
+    removed in a future release. Use
+    :class:`~species.fit.fit_model.FitModel` instead.
 """
 
 import math
+import warnings
 
 from multiprocessing import cpu_count, Pool
 from numbers import Real
@@ -22,6 +28,15 @@ from species.read.read_calibration import ReadCalibration
 from species.read.read_object import ReadObject
 
 
+warnings.warn(
+    "The 'species.fit.fit_spectrum' module is deprecated and will be "
+    "removed in a future release. Use "
+    "'species.fit.fit_model.FitModel' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+
 @beartype
 def lnprob(
     param: np.ndarray,
@@ -35,6 +50,11 @@ def lnprob(
 ) -> Real:
     """
     Internal function for calculating the posterior probability.
+
+    .. deprecated::
+        This function is part of the deprecated
+        ``species.fit.fit_spectrum`` module. Use
+        :class:`~species.fit.fit_model.FitModel` instead.
 
     Parameters
     ----------
@@ -89,6 +109,11 @@ def lnprob(
 class FitSpectrum:
     """
     Class for fitting a calibration spectrum to photometric data.
+
+    .. deprecated::
+        This class is part of the deprecated
+        ``species.fit.fit_spectrum`` module. Use
+        :class:`~species.fit.fit_model.FitModel` instead.
     """
 
     @beartype
