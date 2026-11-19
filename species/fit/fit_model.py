@@ -35,6 +35,7 @@ from beartype import beartype
 from beartype.typing import Optional, Union, List, Tuple, Dict
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
+from scipy.special import erf, erfinv
 from scipy.stats import norm, truncnorm
 
 from species.phot.syn_phot import SyntheticPhotometry
@@ -57,6 +58,27 @@ from species.util.model_util import (
 )
 
 warnings.filterwarnings("always", category=DeprecationWarning)
+
+def truncnorm_logprob(x: Union[float, np.ndarray], low, high, mu, sigma) -> np.ndarray:
+    """Log probability density function.
+
+    :param x: Value(s) at which to evaluate the log probability.
+    :return: Log probability value(s)
+    """
+    phi_low = 0.5 * (1 + erf((low - mu) / sigma / np.sqrt(2)))
+    phi_high = 0.5 * (1 + erf((high - mu) / sigma / np.sqrt(2)))
+    log_norm = -0.5 * (
+        np.log(2 * np.pi * sigma**2) + ((x - mu) / sigma) ** 2
+    )
+    lp = np.where(
+        np.logical_and(np.greater_equal(x, low), np.less(x, high)),
+        log_norm - np.log(phi_high - phi_low),
+        -np.inf,
+    )
+    if lp.ndim == 0:
+        return lp.item()
+    return lp
+
 
 
 class FitModel:
@@ -2679,18 +2701,10 @@ class FitModel:
 
                 if item in self.bounds:
                     low, high = self.bounds[item]
-                    a_trunc = (low - loc) / scale
-                    b_trunc = (high - loc) / scale
-                    lnp_i = truncnorm.logpdf(
-                        pval,
-                        a_trunc,
-                        b_trunc,
-                        loc=loc,
-                        scale=scale,
-                    )
+                    lnp_i = truncnorm_logprob(pval, low, high, loc, scale)
 
                 else:
-                    lnp_i = norm.logpdf(pval, loc=loc, scale=scale)
+                    lnp_i = -0.5 * ( np.log(2 * np.pi * scale**2) + ((pval - loc) / scale) ** 2)
 
             else:
                 low, high = self.bounds[item]
