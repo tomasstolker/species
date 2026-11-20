@@ -51,6 +51,7 @@ full = [
 ]
 docs = [
     "cython",
+    "calistar",
     "jupyter",
     "nbsphinx",
     "pandoc",

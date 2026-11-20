@@ -5,6 +5,7 @@ Module with functionalities for fitting atmospheric model spectra.
 import os
 import sys
 import warnings
+from multiprocessing import Pool
 
 from numbers import Real
 
@@ -31,8 +32,18 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+try:
+    import emcee
+
+except ModuleNotFoundError:
+    warnings.warn(
+        "emcee could not be imported. Perhaps "
+        "because it is not installed in the environment?"
+    )
+
+
 from beartype import beartype
-from beartype.typing import Optional, Union, List, Tuple, Dict
+from beartype.typing import Any, Optional, Union, List, Tuple, Dict
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
 from scipy.stats import norm, truncnorm
@@ -1612,6 +1623,17 @@ class FitModel:
                 print(f"   - {filter_item} = {self.weights[filter_item]:.2e}")
 
     @beartype
+    @property
+    def spec_labels(self) -> List[str]:
+        # Create list with the spectrum labels that are used
+        # for fitting an additional scaling parameter
+        spec_labels = []
+        for spec_item in self.spectrum:
+            if f"scaling_{spec_item}" in self.bounds:
+                spec_labels.append(f"scaling_{spec_item}")
+        return spec_labels
+
+    @beartype
     def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
     ):
@@ -1789,7 +1811,10 @@ class FitModel:
         # spectrum_interp because it creates a list in
         # the order of the keys in param_dict
 
-        if self.param_interp is not None:
+        if self.model == "powerlaw":
+            param_dict = all_param
+
+        elif self.param_interp is not None:
             param_dict = {}
             for param_item in self.param_interp:
                 param_dict[param_item] = all_param[param_item]
@@ -2629,6 +2654,50 @@ class FitModel:
         return -0.5 * ln_like
 
     @beartype
+    def _lnprior_func(self, params) -> Real:
+        lnp = 0.0
+        for item in self.modelpar:
+            i = self.cube_index[item]
+            pval = params[i]
+
+            if item in self.bounds:
+                # If item has bounds and is outside, return -inf and skip calculations
+                low, high = self.bounds[item]
+                if not (low <= pval <= high):
+                    return -np.inf
+            if item in self.normal_prior:
+                # If items has normal prior, calculate norm or truncnorm
+                loc, scale = self.normal_prior[item]
+
+                if item in self.bounds:
+                    # Truncated Normal
+                    low, high = self.bounds[item]
+                    a_trunc = (low - loc) / scale
+                    b_trunc = (high - loc) / scale
+                    lnp_i = truncnorm.logpdf(
+                        pval, a_trunc, b_trunc, loc=loc, scale=scale
+                    )
+                else:
+                    # Normal
+                    lnp_i = norm.logpdf(pval, loc=loc, scale=scale)
+
+            else:
+                # If we reach this point, item within bounds and not normal -> Uniform
+                low, high = self.bounds[item]
+                lnp_i = -np.log(high - low)
+
+            lnp += lnp_i
+
+        return lnp
+
+    @beartype
+    def _lnprob_func(self, params) -> Real:
+        lnp = self._lnprior_func(params)
+        if not np.isfinite(lnp):
+            return -np.inf
+        return lnp + self._lnlike_func(params)
+
+    @beartype
     def _create_attr_dict(self):
         """
         Internal function for creating a dictionary with attributes
@@ -2644,10 +2713,11 @@ class FitModel:
         attr_dict = {
             "model_type": "atmosphere",
             "model_name": self.model,
-            "ln_evidence": (self.ln_z, self.ln_z_error),
             "parallax": self.obj_parallax[0],
             "binary": self.binary,
         }
+        if self.ln_z is not None:
+            attr_dict["ln_evidence"] = (self.ln_z, self.ln_z_error)
 
         if self.ext_model is not None:
             attr_dict["ext_model"] = self.ext_model
@@ -2901,14 +2971,6 @@ class FitModel:
 
         post_samples = analyzer.get_equal_weighted_posterior()
 
-        # Create list with the spectrum labels that are used
-        # for fitting an additional scaling parameter
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
-
         # Samples and ln(L)
 
         ln_prob = post_samples[:, -1]
@@ -2953,7 +3015,7 @@ class FitModel:
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
                 fixed_param=self.fix_param,
-                spec_labels=spec_labels,
+                spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
 
@@ -3178,13 +3240,6 @@ class FitModel:
         else:
             check_nearest_spec(self.model, param_check)
 
-        # Create a list with scaling labels
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
-
         # Samples and ln(L)
 
         samples = result["samples"]
@@ -3229,7 +3284,7 @@ class FitModel:
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
                 fixed_param=self.fix_param,
-                spec_labels=spec_labels,
+                spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
 
@@ -3377,8 +3432,7 @@ class FitModel:
                             )
 
                             print(
-                                "Resumed a Dynesty run from "
-                                f"{out_basename}dynesty.save"
+                                f"Resumed a Dynesty run from {out_basename}dynesty.save"
                             )
 
                         else:
@@ -3557,13 +3611,6 @@ class FitModel:
         else:
             check_nearest_spec(self.model, param_check)
 
-        # Create a list with scaling labels
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
-
         # Adding the fixed parameters to the samples
 
         for param_key, param_value in self.fix_param.items():
@@ -3602,6 +3649,176 @@ class FitModel:
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
                 fixed_param=self.fix_param,
-                spec_labels=spec_labels,
+                spec_labels=self.spec_labels,
+                attr_dict=self._create_attr_dict(),
+            )
+
+    @beartype
+    def run_emcee(
+        self,
+        tag: str,
+        nwalkers: int = 32,
+        nwarmup: int = 1000,
+        nsteps: int = 1000,
+        guess: Union[Dict[str, Real], Dict[str, None], None] = None,
+        n_pool: Optional[int] = None,
+        mpi_pool: bool = False,
+        sampler_kwargs: Optional[Dict[str, Any]] = None,
+        run_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Function for running the fit with a grid of model spectra.
+        The parameter estimation is done with ``emcee``.
+
+        .. warning::
+
+            MCMC may struggle with the complex posterior distributions
+            of atmospheric models in ``species``. In most cases, the
+            nested sampling methods
+            :meth:`~species.fit.fit_model.FitModel.run_multinest`,
+            :meth:`~species.fit.fit_model.FitModel.run_ultranest`, and
+            :meth:`~species.fit.fit_model.FitModel.run_dynesty` are
+            preferred.
+
+        When using MPI, it is also required to install ``mpi4py`` (e.g.
+        ``pip install mpi4py``), otherwise an error may occur when the
+        ``output_folder`` is created by multiple processes.
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the samples will be stored.
+        nwalkers : int
+            Number of walkers (chains) in the MCMC. Defaults to 32.
+        nwarmup : int
+            Number of warm-up (burn-in) steps in the MCMC.
+            These steps are discarded. Defaults to 1000.
+        nsteps : int
+            Number of sampling steps in the MCMC. Defaults to 1000.
+        guess : dict, None
+            First guess to inialize the MCMC chains.
+            If provided, the walkers are initialized in a small
+            gaussian ball around this point. Otherwise, they are
+            initialized across the prior. Defaults to ``None``.
+        n_pool : int, None
+            The number of processes for the local multiprocessing. The
+            parameter is not used when the argument is set to ``None``.
+        mpi_pool : bool
+            Distribute the workers to an ``MPIPool`` on a cluster,
+            using ``schwimmbad``.
+        sampler_kwargs : dict, None
+            Additional keyword arguments for the
+            `emcee.EnsembleSampler
+            <https://emcee.readthedocs.io/en/stable/user/sampler/#emcee.EnsembleSampler>`_
+            constructor. Defaults to ``None``. Values provided in this
+            dictionary override the internally configured ``pool`` argument.
+        run_kwargs : dict, None
+            Additional keyword arguments for the
+            `emcee.EnsembleSampler.run_mcmc
+            <https://emcee.readthedocs.io/en/stable/user/sampler/#emcee.EnsembleSampler.run_mcmc>`_
+            method. Defaults to ``None``. Values provided in this dictionary
+            override the internally configured ``progress`` argument.
+        """
+        ndim = len(self.modelpar)
+
+        guess = guess or {}
+
+        for param_item, param_value in guess.items():
+            if param_item in self.bounds:
+                lower, upper = self.bounds[param_item]
+
+                if not lower <= param_value <= upper:
+                    raise ValueError(
+                        f"The initial guess for '{param_item}' "
+                        f"({param_value}) is outside the bounds "
+                        f"({lower}, {upper})."
+                    )
+
+        rng = np.random.default_rng()
+        initial = np.zeros((nwalkers, ndim))
+        for item in self.modelpar:
+            i = self.cube_index[item]
+            if guess.get(item) is not None:
+                if item in self.bounds:
+                    width = min(
+                        abs(guess[item] - self.bounds[item][0]),
+                        abs(guess[item] - self.bounds[item][1]),
+                    )
+                    initial[:, i] = guess[item] + rng.normal(0, 0.1 * width, nwalkers)
+                else:
+                    initial[:, i] = guess[item] + rng.normal(
+                        0, 0.1 * self.normal_prior[item][1], nwalkers
+                    )
+
+            elif item in self.normal_prior and item not in self.bounds:
+                initial[:, i] = rng.normal(
+                    loc=self.normal_prior[item][0],
+                    scale=self.normal_prior[item][1],
+                    size=nwalkers,
+                )
+            else:
+                initial[:, i] = rng.uniform(
+                    low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
+                )
+
+        if mpi_pool:
+            pool = MPIPool()
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+        elif n_pool:
+            pool = Pool(n_pool)
+        else:
+            pool = None
+        try:
+            sampler_kwargs = {"pool": pool, **(sampler_kwargs or {})}
+            sampler = emcee.EnsembleSampler(
+                nwalkers, ndim, self._lnprob_func, **sampler_kwargs
+            )
+            run_kwargs = {"progress": True, **(run_kwargs or {})}
+            sampler.run_mcmc(initial, nwarmup + nsteps, **run_kwargs)
+
+            samples = sampler.get_chain(flat=True, discard=nwarmup)
+            ln_prob = sampler.get_log_prob(flat=True, discard=nwarmup)
+
+        finally:
+            if pool is not None:
+                pool.close()
+                if not mpi_pool:
+                    pool.join()
+
+        sampler.get_autocorr_time(discard=nwarmup, quiet=True)
+
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
+            samples = np.append(
+                samples,
+                np.full((samples.shape[0], 1), param_value),
+                axis=1,
+            )
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ImportError:
+            mpi_rank = 0
+
+        if mpi_rank == 0:
+            from species.data.database import Database
+
+            species_db = Database()
+
+            species_db.add_samples(
+                tag=tag,
+                sampler="emcee",
+                samples=samples,
+                ln_prob=ln_prob,
+                modelpar=self.modelpar,
+                bounds=self.bounds,
+                normal_prior=self.normal_prior,
+                fixed_param=self.fix_param,
+                spec_labels=self.spec_labels,
                 attr_dict=self._create_attr_dict(),
             )

@@ -2310,7 +2310,7 @@ class Database:
         tag : str
             Database tag.
         sampler : str
-            Sampler ('multinest', 'ultranest', 'dynesty').
+            Sampler ('multinest', 'ultranest', 'dynesty', 'emcee').
         samples : np.ndarray
             Samples of the posterior.
         ln_prob : np.ndarray
