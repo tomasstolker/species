@@ -194,11 +194,11 @@ class Database:
                     print(f"   - {ref_item}")
 
                 if planet_name in comp_spec:
-                    for key, value in comp_spec[planet_name].items():
-                        if key == "GRAVITY" and planet_name in GRAVITY_TARGETS:
+                    for spec_key, spec_value in comp_spec[planet_name].items():
+                        if spec_key == "GRAVITY" and planet_name in GRAVITY_TARGETS:
                             continue
 
-                        print(f"{key} spectrum from {value[3]}")
+                        print(f"{spec_key} spectrum from {spec_value[3]}")
 
                 if planet_name in GRAVITY_TARGETS:
                     print(

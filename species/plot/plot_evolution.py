@@ -17,6 +17,25 @@ from species.read.read_isochrone import ReadIsochrone
 from species.util.core_util import print_section
 
 
+def _prior_summary(prior, posterior_samples):
+    """Return a prior center and lower/upper error widths."""
+
+    prior = np.atleast_1d(np.asarray(prior, dtype=float))
+
+    if prior.size == 0 or np.isnan(prior[0]):
+        quantiles = np.percentile(posterior_samples, [50.0, 16.0, 84.0])
+        return (
+            quantiles[0],
+            quantiles[0] - quantiles[1],
+            quantiles[2] - quantiles[0],
+        )
+
+    if prior.size == 2:
+        return prior[0], abs(prior[1]), abs(prior[1])
+
+    return prior[0], abs(prior[1]), abs(prior[2])
+
+
 @beartype
 def plot_cooling(
     tag: str,
@@ -109,23 +128,14 @@ def plot_cooling(
     n_planets = attr["n_planets"]
     model_name = attr["model_name"]
     log_lum = attr["log_lum"]
-    age_prior = attr["age_prior"]
+    age_prior = _prior_summary(
+        attr["age_prior"], samples[:, samples_box.parameters.index("age")]
+    )
     radius_prior = attr["radius_prior"]
 
     param_indices = {}
     for i in range(n_param):
         param_indices[samples_box.attributes[f"parameter{i}"]] = i
-
-    if np.isnan(age_prior[0]):
-        param_idx = samples_box.parameters.index("age")
-        age_prior = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
-    else:
-        # Asymmetric normal prior set in FitEvolution
-        age_prior = [
-            age_prior[0],
-            age_prior[0] + age_prior[1],
-            age_prior[0] + age_prior[2],
-        ]
 
     read_iso = ReadIsochrone(model_name)
 
@@ -151,22 +161,6 @@ def plot_cooling(
         cool_tracks.append([])
 
     for i in range(n_planets):
-        if not isinstance(radius_prior[i], np.ndarray) and np.isnan(radius_prior[i]):
-            param_idx = samples_box.parameters.index(f"radius_{i}")
-            radius_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
-        else:
-            radius_tmp = [
-                radius_prior[i][0],
-                radius_prior[i][0] - radius_prior[i][1],
-                radius_prior[i][0] + radius_prior[i][1],
-            ]
-
-        param_idx = samples_box.parameters.index(f"teff_{i}")
-        teff_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
-
-        param_idx = samples_box.parameters.index(f"logg_{i}")
-        logg_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
-
         ax[i].set_xscale(xscale)
         ax[i].set_yscale(yscale)
 
@@ -232,57 +226,70 @@ def plot_cooling(
             ax[i].get_xaxis().set_label_coords(0.5, offset[0])
             ax[i].get_yaxis().set_label_coords(offset[1], 0.5)
 
-        ran_indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
+    ran_indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
 
-        for sample_idx in ran_indices:
-            for planet_idx in range(n_planets):
-                mass = samples[sample_idx, param_indices[f"mass_{planet_idx}"]]
+    for sample_idx in ran_indices:
+        for planet_idx in range(n_planets):
+            mass = samples[sample_idx, param_indices[f"mass_{planet_idx}"]]
 
-                if f"s_init_{planet_idx}" in param_indices:
-                    s_init = samples[sample_idx, param_indices[f"s_init_{planet_idx}"]]
-                else:
-                    s_init = None
+            if f"s_init_{planet_idx}" in param_indices:
+                s_init = samples[sample_idx, param_indices[f"s_init_{planet_idx}"]]
+            else:
+                s_init = None
 
-                cool_box = read_iso.get_cooling_track(
-                    mass=mass, ages=None, s_init=s_init
+            cool_box = read_iso.get_cooling_track(
+                mass=mass, ages=None, s_init=s_init
+            )
+
+            if cooling_param in ["luminosity", "log_lum"]:
+                cool_tracks[planet_idx].append([cool_box.age, cool_box.log_lum])
+
+            elif cooling_param == "radius":
+                cool_tracks[planet_idx].append([cool_box.age, cool_box.radius])
+
+            elif cooling_param == "teff":
+                cool_tracks[planet_idx].append([cool_box.age, cool_box.teff])
+
+            elif cooling_param == "logg":
+                cool_tracks[planet_idx].append([cool_box.age, cool_box.logg])
+
+            if cool_tracks[planet_idx][-1][1] is None:
+                raise ValueError(
+                    f"The selected parameter, '{cooling_param}', "
+                    f"is not part of the '{model_name}' "
+                    "evolutionary model grid."
                 )
 
-                if cooling_param in ["luminosity", "log_lum"]:
-                    cool_tracks[planet_idx].append([cool_box.age, cool_box.log_lum])
-
-                elif cooling_param == "radius":
-                    cool_tracks[planet_idx].append([cool_box.age, cool_box.radius])
-
-                elif cooling_param == "teff":
-                    cool_tracks[planet_idx].append([cool_box.age, cool_box.teff])
-
-                elif cooling_param == "logg":
-                    cool_tracks[planet_idx].append([cool_box.age, cool_box.logg])
-
-                if cool_tracks[planet_idx][-1][1] is None:
-                    raise ValueError(
-                        f"The selected parameter, '{cooling_param}', "
-                        f"is not part of the '{model_name}' "
-                        "evolutionary model grid."
-                    )
-
-                ax[planet_idx].plot(
-                    cool_tracks[planet_idx][-1][0],
-                    cool_tracks[planet_idx][-1][1],
-                    lw=0.5,
-                    color="gray",
-                    alpha=0.5,
-                )
+            ax[planet_idx].plot(
+                cool_tracks[planet_idx][-1][0],
+                cool_tracks[planet_idx][-1][1],
+                lw=0.5,
+                color="gray",
+                alpha=0.5,
+            )
 
     for i in range(n_planets):
+        if not isinstance(radius_prior[i], np.ndarray) and np.isnan(radius_prior[i]):
+            param_idx = samples_box.parameters.index(f"radius_{i}")
+            radius_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+        else:
+            radius_tmp = [
+                radius_prior[i][0],
+                radius_prior[i][0] - radius_prior[i][1],
+                radius_prior[i][0] + radius_prior[i][1],
+            ]
+
+        param_idx = samples_box.parameters.index(f"teff_{i}")
+        teff_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
+        param_idx = samples_box.parameters.index(f"logg_{i}")
+        logg_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
         if cooling_param in ["luminosity", "log_lum"]:
             ax[i].errorbar(
                 [age_prior[0]],
                 [log_lum[i][0]],
-                xerr=[
-                    [age_prior[0] - np.abs(age_prior[1])],
-                    [age_prior[2] - age_prior[0]],
-                ],
+                xerr=[[age_prior[1]], [age_prior[2]]],
                 yerr=[log_lum[i][1]],
                 color="tab:orange",
             )
@@ -291,10 +298,7 @@ def plot_cooling(
             ax[i].errorbar(
                 [age_prior[0]],
                 [radius_tmp[0]],
-                xerr=[
-                    [age_prior[0] - np.abs(age_prior[1])],
-                    [age_prior[2] - age_prior[0]],
-                ],
+                xerr=[[age_prior[1]], [age_prior[2]]],
                 yerr=[[radius_tmp[0] - radius_tmp[1]], [radius_tmp[2] - radius_tmp[0]]],
                 color="tab:orange",
             )
@@ -303,10 +307,7 @@ def plot_cooling(
             ax[i].errorbar(
                 [age_prior[0]],
                 [teff_tmp[0]],
-                xerr=[
-                    [age_prior[0] - np.abs(age_prior[1])],
-                    [age_prior[2] - age_prior[0]],
-                ],
+                xerr=[[age_prior[1]], [age_prior[2]]],
                 yerr=[[teff_tmp[0] - teff_tmp[1]], [teff_tmp[2] - teff_tmp[0]]],
                 color="tab:orange",
             )
@@ -315,10 +316,7 @@ def plot_cooling(
             ax[i].errorbar(
                 [age_prior[0]],
                 [logg_tmp[0]],
-                xerr=[
-                    [age_prior[0] - np.abs(age_prior[1])],
-                    [age_prior[2] - age_prior[0]],
-                ],
+                xerr=[[age_prior[1]], [age_prior[2]]],
                 yerr=[[logg_tmp[0] - logg_tmp[1]], [logg_tmp[2] - logg_tmp[0]]],
                 color="tab:orange",
             )
@@ -422,24 +420,16 @@ def plot_isochrones(
     n_planets = attr["n_planets"]
     model_name = attr["model_name"]
     log_lum = attr["log_lum"]
-    age_prior = attr["age_prior"]
     mass_prior = attr["mass_prior"]
 
     param_indices = {}
     for i in range(n_param):
         param_indices[samples_box.attributes[f"parameter{i}"]] = i
 
-    if np.isnan(age_prior[0]):
-        param_idx = samples_box.parameters.index("age")
-        age_prior = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
-
-    else:
-        # Asymmetric normal prior set in FitEvolution
-        age_prior = [
-            age_prior[0],
-            age_prior[0] + age_prior[1],
-            age_prior[0] + age_prior[2],
-        ]
+    mass_summaries = []
+    for i in range(n_planets):
+        mass_idx = samples_box.parameters.index(f"mass_{i}")
+        mass_summaries.append(_prior_summary(mass_prior[i], samples[:, mass_idx]))
 
     read_iso = ReadIsochrone(model_name)
 
@@ -570,15 +560,7 @@ def plot_isochrones(
                     mass = samples[sample_idx, param_indices[f"mass_{planet_idx}"]]
 
                 else:
-                    # Use the mass prior if not in the samples
-                    if not isinstance(mass_prior[planet_idx], np.ndarray) and np.isnan(
-                        mass_prior[planet_idx]
-                    ):
-                        param_idx = samples_box.parameters.index(f"mass_{planet_idx}")
-                        mass = np.percentile(samples[:, param_idx], 50.0)
-
-                    else:
-                        mass = mass_prior[planet_idx][0]
+                    mass = mass_summaries[planet_idx][0]
 
                 iso_box = read_iso.get_entropy_track(
                     age=age, mass=mass, param_interp=["log_lum"]
@@ -597,23 +579,15 @@ def plot_isochrones(
     for i in range(n_planets):
         if track_type == "entropy":
             param_idx = samples_box.parameters.index(f"s_init_{i}")
-            x_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
-
-        elif not isinstance(mass_prior[i], np.ndarray) and np.isnan(mass_prior[i]):
-            param_idx = samples_box.parameters.index(f"mass_{i}")
-            x_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+            x_tmp = _prior_summary([np.nan], samples[:, param_idx])
 
         else:
-            x_tmp = [
-                mass_prior[i][0],
-                mass_prior[i][0] - mass_prior[i][1],
-                mass_prior[i][0] + mass_prior[i][1],
-            ]
+            x_tmp = mass_summaries[i]
 
         ax[i].errorbar(
             [x_tmp[0]],
             [log_lum[i][0]],
-            xerr=[[x_tmp[0] - x_tmp[1]], [x_tmp[2] - x_tmp[0]]],
+            xerr=[[x_tmp[1]], [x_tmp[2]]],
             yerr=[log_lum[i][1]],
             color="tab:orange",
         )

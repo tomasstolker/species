@@ -50,7 +50,7 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="76e47eb6b8124148bc618c1ec88b0885992e82f57606ad7ae24a1e77fa7011e4",
+            known_hash="39d5b12cbd405b2d8fde79fde7d711e3514580c1a492671d601398e33ccda29f",
             fname=input_file,
             path=input_path,
             progressbar=True,
@@ -66,7 +66,7 @@ def add_marleau2014(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="e69e78cd2fe5d642f493fa4e53dc7049db7269a9de9ad2aa0e447d02303b31eb",
+            known_hash="f065dd6f062892b9430b3314b48fccdf94a6688c760306019ffb660ada44cdef",
             fname=input_file,
             path=input_path,
             progressbar=True,

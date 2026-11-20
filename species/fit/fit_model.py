@@ -1833,21 +1833,24 @@ class FitModel:
                 if "logg" in all_param and "radius" in all_param:
                     mass = logg_to_mass(all_param["logg"], all_param["radius"])
 
+                    # Truncate the Gaussian mass constraint at zero.
+                    if mass < 0.0:
+                        return -np.inf
+
                     ln_like += (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
 
-                else:
-                    if "logg" not in all_param:
-                        warnings.warn(
-                            "The 'logg' parameter is not used "
-                            f"by the '{self.model}' model so "
-                            "the mass prior cannot be applied."
-                        )
+                elif "logg" not in all_param:
+                    warnings.warn(
+                        "The 'logg' parameter is not used "
+                        f"by the '{self.model}' model so "
+                        "the mass prior cannot be applied."
+                    )
 
-                    elif "radius" not in all_param:
-                        warnings.warn(
-                            "The 'radius' parameter is not fitted "
-                            "so the mass prior cannot be applied."
-                        )
+                elif "radius" not in all_param:
+                    warnings.warn(
+                        "The 'radius' parameter is not fitted "
+                        "so the mass prior cannot be applied."
+                    )
 
             elif self.binary and prior_key in ["mass_0", "mass_1"]:
                 bin_idx = prior_key[-1]
