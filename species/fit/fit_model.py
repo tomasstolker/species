@@ -43,7 +43,7 @@ except ModuleNotFoundError:
 
 
 from beartype import beartype
-from beartype.typing import Optional, Union, List, Tuple, Dict
+from beartype.typing import Any, Optional, Union, List, Tuple, Dict
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
 from scipy.stats import norm, truncnorm
@@ -3660,6 +3660,8 @@ class FitModel:
         guess: Union[Dict[str, Real], Dict[str, None], None] = None,
         n_pool: Optional[int] = None,
         mpi_pool: bool = False,
+        sampler_kwargs: Optional[Dict[str, Any]] = None,
+        run_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Function for running the fit with a grid of model spectra.
@@ -3701,6 +3703,18 @@ class FitModel:
         mpi_pool : bool
             Distribute the workers to an ``MPIPool`` on a cluster,
             using ``schwimmbad``.
+        sampler_kwargs : dict, None
+            Additional keyword arguments for the
+            `emcee.EnsembleSampler
+            <https://emcee.readthedocs.io/en/stable/user/sampler/#emcee.EnsembleSampler>`_
+            constructor. Defaults to ``None``. Values provided in this
+            dictionary override the internally configured ``pool`` argument.
+        run_kwargs : dict, None
+            Additional keyword arguments for the
+            `emcee.EnsembleSampler.run_mcmc
+            <https://emcee.readthedocs.io/en/stable/user/sampler/#emcee.EnsembleSampler.run_mcmc>`_
+            method. Defaults to ``None``. Values provided in this dictionary
+            override the internally configured ``progress`` argument.
         """
         ndim = len(self.modelpar)
 
@@ -3754,10 +3768,12 @@ class FitModel:
         else:
             pool = None
         try:
+            sampler_kwargs = {"pool": pool, **(sampler_kwargs or {})}
             sampler = emcee.EnsembleSampler(
-                nwalkers, ndim, self._lnprob_func, pool=pool
+                nwalkers, ndim, self._lnprob_func, **sampler_kwargs
             )
-            sampler.run_mcmc(initial, nwarmup + nsteps, progress=True)
+            run_kwargs = {"progress": True, **(run_kwargs or {})}
+            sampler.run_mcmc(initial, nwarmup + nsteps, **run_kwargs)
 
             samples = sampler.get_chain(flat=True, discard=nwarmup)
             ln_prob = sampler.get_log_prob(flat=True, discard=nwarmup)
