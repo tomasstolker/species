@@ -3768,6 +3768,8 @@ class FitModel:
                 if not mpi_pool:
                     pool.join()
 
+        sampler.get_autocorr_time(discard=nwarmup, quiet=True)
+
         for param_key, param_value in self.fix_param.items():
             self.modelpar.append(param_key)
             samples = np.append(
