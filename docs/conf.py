@@ -46,7 +46,7 @@ nbsphinx_allow_errors = True
 autoclass_content = "both"
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -78,7 +78,7 @@ html_context = {
     "doc_path": "docs",
 }
 
-html_static_path = []
+html_static_path = ["_static"]
 
 html_logo = "_static/species_logo.png"
 html_search_language = "en"
