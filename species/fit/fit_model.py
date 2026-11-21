@@ -5,7 +5,6 @@ Module with functionalities for fitting atmospheric model spectra.
 import os
 import sys
 import warnings
-
 from numbers import Real
 
 import dynesty
@@ -14,7 +13,7 @@ import numpy as np
 try:
     import ultranest
 
-except:
+except ModuleNotFoundError:
     warnings.warn(
         "UltraNest could not be imported. Perhaps "
         "because cython was not correctly compiled?"
@@ -23,7 +22,7 @@ except:
 try:
     import pymultinest
 
-except:
+except ModuleNotFoundError:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
@@ -32,16 +31,16 @@ except:
     )
 
 from beartype import beartype
-from beartype.typing import Optional, Union, List, Tuple, Dict
+from beartype.typing import Dict, List, Optional, Tuple, Union
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
-from scipy.stats import norm, truncnorm
+from scipy.special import erf, erfinv
 
 from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
 from species.read.read_model import ReadModel
 from species.read.read_object import ReadObject
 from species.read.read_planck import ReadPlanck
-from species.read.read_filter import ReadFilter
 from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
 from species.util.dust_util import (
@@ -49,14 +48,33 @@ from species.util.dust_util import (
     interp_powerlaw,
 )
 from species.util.model_util import (
+    apply_obs,
     binary_to_single,
     check_nearest_spec,
     extract_disk_param,
-    apply_obs,
     powerlaw_spectrum,
 )
 
 warnings.filterwarnings("always", category=DeprecationWarning)
+
+
+def truncnorm_logprob(x: Union[float, np.ndarray], low, high, mu, sigma) -> np.ndarray:
+    """Log probability density function.
+
+    :param x: Value(s) at which to evaluate the log probability.
+    :return: Log probability value(s)
+    """
+    phi_low = 0.5 * (1 + erf((low - mu) / sigma / np.sqrt(2)))
+    phi_high = 0.5 * (1 + erf((high - mu) / sigma / np.sqrt(2)))
+    log_norm = -0.5 * (np.log(2 * np.pi * sigma**2) + ((x - mu) / sigma) ** 2)
+    lp = np.where(
+        np.logical_and(np.greater_equal(x, low), np.less(x, high)),
+        log_norm - np.log(phi_high - phi_low),
+        -np.inf,
+    )
+    if lp.ndim == 0:
+        return lp.item()
+    return lp
 
 
 class FitModel:
@@ -299,7 +317,7 @@ class FitModel:
                  the photometric fluxes are dominated by continuum
                  emission while spectral lines are ignored.
 
-               - The :func:`~species.plot.plot_mcmc.plot_mag_posterior`
+               - The :func:`~species.plot.plot_posterior.plot_mag_posterior`
                  function can be used for calculating synthetic
                  photometry and error bars from the posterior
                  distributions.
@@ -1615,6 +1633,17 @@ class FitModel:
     def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
     ):
+        warnings.warn(
+            "_prior_transform is deprecated, use prior_transform instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.prior_transform(cube, bounds, cube_index)
+
+    @beartype
+    def prior_transform(
+        self, cube, bounds: Dict[str, Tuple[Real, Real]], cube_index: Dict[str, int]
+    ):
         """
         Function to transform the sampled unit cube into a
         cube with sampled model parameters.
@@ -1648,52 +1677,43 @@ class FitModel:
             param_out = cube
 
         for param_item in cube_index:
+            u = param_out[cube_index[param_item]]
             if param_item in self.normal_prior:
+                loc, scale = self.normal_prior[param_item]
                 if param_item in bounds:
+                    low, high = bounds[param_item]
                     # Truncated normal prior
 
-                    # The truncation values are given in number of
-                    # standard deviations relative to the mean
-                    # of the normal distribution
-
-                    a_trunc = (
-                        bounds[param_item][0] - self.normal_prior[param_item][0]
-                    ) / self.normal_prior[param_item][1]
-
-                    b_trunc = (
-                        bounds[param_item][1] - self.normal_prior[param_item][0]
-                    ) / self.normal_prior[param_item][1]
-
-                    param_out[cube_index[param_item]] = truncnorm.ppf(
-                        param_out[cube_index[param_item]],
-                        a_trunc,
-                        b_trunc,
-                        loc=self.normal_prior[param_item][0],
-                        scale=self.normal_prior[param_item][1],
-                    )
-
+                    a = erf((low - loc) / (scale * np.sqrt(2)))
+                    b = erf((high - loc) / (scale * np.sqrt(2)))
+                    param_out[cube_index[param_item]] = loc + scale * np.sqrt(
+                        2
+                    ) * erfinv((1 - u) * a + u * b)
                 else:
                     # Normal prior
-
-                    param_out[cube_index[param_item]] = norm.ppf(
-                        param_out[cube_index[param_item]],
-                        loc=self.normal_prior[param_item][0],
-                        scale=self.normal_prior[param_item][1],
-                    )
+                    param_out[cube_index[param_item]] = loc + scale * np.sqrt(
+                        2
+                    ) * erfinv(2 * u - 1)
 
             else:
                 # Uniform prior
 
-                param_out[cube_index[param_item]] = (
-                    bounds[param_item][0]
-                    + (bounds[param_item][1] - bounds[param_item][0])
-                    * param_out[cube_index[param_item]]
-                )
+                low, high = bounds[param_item]
+                param_out[cube_index[param_item]] = low + (high - low) * u
 
         return param_out
 
     @beartype
-    def _lnlike_func(
+    def _lnlike_func(self, params) -> Real:
+        warnings.warn(
+            "_lnlike_func is deprecated, use lnlike instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.lnlike(params)
+
+    @beartype
+    def lnlike(
         self,
         params,
     ) -> Real:
@@ -1736,12 +1756,15 @@ class FitModel:
 
         if self.model == "planck" and self.n_planck > 1:
             for planck_idx in range(self.n_planck - 1):
-                if all_param[f"teff_{planck_idx+1}"] > all_param[f"teff_{planck_idx}"]:
+                if (
+                    all_param[f"teff_{planck_idx + 1}"]
+                    > all_param[f"teff_{planck_idx}"]
+                ):
                     return -np.inf
 
                 if (
                     all_param[f"radius_{planck_idx}"]
-                    > all_param[f"radius_{planck_idx+1}"]
+                    > all_param[f"radius_{planck_idx + 1}"]
                 ):
                     return -np.inf
 
@@ -1766,13 +1789,13 @@ class FitModel:
                 else:
                     if (
                         all_param[f"disk_teff_{disk_idx}"]
-                        > all_param[f"disk_teff_{disk_idx-1}"]
+                        > all_param[f"disk_teff_{disk_idx - 1}"]
                     ):
                         return -np.inf
 
                     if (
                         all_param[f"disk_radius_{disk_idx}"]
-                        < all_param[f"disk_radius_{disk_idx-1}"]
+                        < all_param[f"disk_radius_{disk_idx - 1}"]
                     ):
                         return -np.inf
 
@@ -1789,7 +1812,10 @@ class FitModel:
         # spectrum_interp because it creates a list in
         # the order of the keys in param_dict
 
-        if self.param_interp is not None:
+        if self.model == "powerlaw":
+            param_dict = all_param
+
+        elif self.param_interp is not None:
             param_dict = {}
             for param_item in self.param_interp:
                 param_dict[param_item] = all_param[param_item]
@@ -2217,7 +2243,6 @@ class FitModel:
         # Compare spectra with model
 
         for spec_idx, spec_item in enumerate(self.spectrum.keys()):
-
             if self.model == "planck":
                 # Calculate a blackbody spectrum from the sampled parameters
 
@@ -2629,6 +2654,78 @@ class FitModel:
         return -0.5 * ln_like
 
     @beartype
+    def lnprior(self, params) -> Real:
+        """ "
+        Function for calculating the log-prior of the model at a sampled
+        point. The priors are taken from ``FitModel.normal_prior`` and
+        ``FitModel.bounds``.
+
+        Parameters
+        ----------
+        params : np.ndarray
+            Cube with sampled model parameters
+
+        Returns
+        -------
+        float
+            Log-prior
+        """
+        lnp = 0.0
+
+        for item in self.modelpar:
+            pval = params[self.cube_index[item]]
+
+            if item in self.bounds:
+                low, high = self.bounds[item]
+
+                if not (low <= pval <= high):
+                    return -np.inf
+
+            if item in self.normal_prior:
+                loc, scale = self.normal_prior[item]
+
+                if item in self.bounds:
+                    low, high = self.bounds[item]
+                    lnp_i = truncnorm_logprob(pval, low, high, loc, scale)
+
+                else:
+                    lnp_i = -0.5 * (
+                        np.log(2 * np.pi * scale**2) + ((pval - loc) / scale) ** 2
+                    )
+
+            else:
+                low, high = self.bounds[item]
+                lnp_i = -np.log(high - low)
+
+            lnp += lnp_i
+
+        return lnp
+
+    @beartype
+    def lnprob(self, params) -> Real:
+        """
+        Function for calculating the log-posterior probability of
+        the model at a sampled point. It calls :meth:`lnprior` and
+        :meth:`lnlike` internally.
+
+        Parameters
+        ----------
+        params : np.ndarray
+            Cube with sampled model parameters
+
+        Returns
+        -------
+        float
+            Log-posterior
+        """
+        lnp = self.lnprior(params)
+
+        if not np.isfinite(lnp):
+            return -np.inf
+
+        return lnp + self.lnlike(params)
+
+    @beartype
     def _create_attr_dict(self):
         """
         Internal function for creating a dictionary with attributes
@@ -2802,7 +2899,7 @@ class FitModel:
                 None
             """
 
-            self._prior_transform(cube, self.bounds, self.cube_index)
+            self.prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
         def _lnlike_multinest(params, n_dim: int, n_param: int) -> Real:
@@ -2827,7 +2924,7 @@ class FitModel:
                 Log-likelihood.
             """
 
-            return self._lnlike_func(params)
+            return self.lnlike(params)
 
         pymultinest.run(
             _lnlike_multinest,
@@ -3075,7 +3172,7 @@ class FitModel:
                 Cube with the sampled model parameters.
             """
 
-            return self._prior_transform(cube, self.bounds, self.cube_index)
+            return self.prior_transform(cube, self.bounds, self.cube_index)
 
         @beartype
         def _lnlike_ultranest(params: np.ndarray) -> Real:
@@ -3094,7 +3191,7 @@ class FitModel:
                 Log-likelihood.
             """
 
-            ln_like = self._lnlike_func(params)
+            ln_like = self.lnlike(params)
 
             if not np.isfinite(ln_like):
                 # UltraNest cannot handle np.inf in the likelihood
@@ -3334,8 +3431,8 @@ class FitModel:
             if n_pool is not None:
                 with dynesty.pool.Pool(
                     n_pool,
-                    self._lnlike_func,
-                    self._prior_transform,
+                    self.lnlike,
+                    self.prior_transform,
                     ptform_args=[self.bounds, self.cube_index],
                 ) as pool:
                     print(f"Initialized a Dynesty.pool with {n_pool} workers")
@@ -3348,8 +3445,7 @@ class FitModel:
                             )
 
                             print(
-                                "Resumed a Dynesty run from "
-                                f"{out_basename}dynesty.save"
+                                f"Resumed a Dynesty run from {out_basename}dynesty.save"
                             )
 
                         else:
@@ -3377,8 +3473,7 @@ class FitModel:
                             )
 
                             print(
-                                "Resumed a Dynesty run from "
-                                f"{out_basename}dynesty.save"
+                                f"Resumed a Dynesty run from {out_basename}dynesty.save"
                             )
 
                         else:
@@ -3408,8 +3503,8 @@ class FitModel:
 
                     else:
                         dsampler = dynesty.DynamicNestedSampler(
-                            loglikelihood=self._lnlike_func,
-                            prior_transform=self._prior_transform,
+                            loglikelihood=self.lnlike,
+                            prior_transform=self.prior_transform,
                             ndim=len(self.modelpar),
                             ptform_args=[self.bounds, self.cube_index],
                             sample=sample_method,
@@ -3433,8 +3528,8 @@ class FitModel:
 
                     else:
                         dsampler = dynesty.NestedSampler(
-                            loglikelihood=self._lnlike_func,
-                            prior_transform=self._prior_transform,
+                            loglikelihood=self.lnlike,
+                            prior_transform=self.prior_transform,
                             ndim=len(self.modelpar),
                             ptform_args=[self.bounds, self.cube_index],
                             sample=sample_method,
@@ -3465,8 +3560,8 @@ class FitModel:
 
                 else:
                     dsampler = dynesty.DynamicNestedSampler(
-                        loglikelihood=self._lnlike_func,
-                        prior_transform=self._prior_transform,
+                        loglikelihood=self.lnlike,
+                        prior_transform=self.prior_transform,
                         ndim=len(self.modelpar),
                         ptform_args=[self.bounds, self.cube_index],
                         pool=pool,
@@ -3490,8 +3585,8 @@ class FitModel:
 
                 else:
                     dsampler = dynesty.NestedSampler(
-                        loglikelihood=self._lnlike_func,
-                        prior_transform=self._prior_transform,
+                        loglikelihood=self.lnlike,
+                        prior_transform=self.prior_transform,
                         ndim=len(self.modelpar),
                         ptform_args=[self.bounds, self.cube_index],
                         pool=pool,

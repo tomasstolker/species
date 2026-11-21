@@ -2657,7 +2657,7 @@ class Database:
         return model_param
 
     @beartype
-    def get_mcmc_spectra(
+    def get_posterior_spectra(
         self,
         tag: str,
         random: Optional[int] = None,
@@ -2935,7 +2935,7 @@ class Database:
             return boxes
 
     @beartype
-    def get_mcmc_photometry(
+    def get_posterior_photometry(
         self,
         tag: str,
         filter_name: str,
@@ -3039,9 +3039,9 @@ class Database:
 
             readcalib = ReadCalibration(model_name, filter_name=filter_name)
 
-        mcmc_phot = np.zeros((samples.shape[0]))
+        posterior_phot = np.zeros((samples.shape[0]))
 
-        for i in tqdm(range(samples.shape[0]), desc="Getting MCMC photometry"):
+        for i in tqdm(range(samples.shape[0]), desc="Getting posterior photometry"):
             model_param = {}
 
             for j in range(n_param):
@@ -3070,10 +3070,10 @@ class Database:
                         app_mag, _ = synphot.spectrum_to_magnitude(
                             pl_box.wavelength, pl_box.flux
                         )
-                        mcmc_phot[i] = app_mag[0]
+                        posterior_phot[i] = app_mag[0]
 
                     elif phot_type == "flux":
-                        mcmc_phot[i], _ = synphot.spectrum_to_flux(
+                        posterior_phot[i], _ = synphot.spectrum_to_flux(
                             pl_box.wavelength, pl_box.flux
                         )
 
@@ -3083,58 +3083,60 @@ class Database:
                             from species.util.model_util import binary_to_single
 
                             param_0 = binary_to_single(model_param, 0)
-                            mcmc_phot_0, _ = readmodel.get_magnitude(param_0)
+                            posterior_phot_0, _ = readmodel.get_magnitude(param_0)
 
                             param_1 = binary_to_single(model_param, 1)
-                            mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
+                            posterior_phot_1, _ = readmodel.get_magnitude(param_1)
 
                             # Weighted flux of two spectra for atmospheric asymmetries
                             # Or simply the same in case of an actual binary system
 
                             if "spec_weight" in model_param:
-                                mcmc_phot[i] = (
-                                    model_param["spec_weight"] * mcmc_phot_0
-                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                posterior_phot[i] = (
+                                    model_param["spec_weight"] * posterior_phot_0
+                                    + (1.0 - model_param["spec_weight"])
+                                    * posterior_phot_1
                                 )
 
                             else:
-                                mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
+                                posterior_phot[i] = posterior_phot_0 + posterior_phot_1
 
                         else:
-                            mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
+                            posterior_phot[i], _ = readmodel.get_magnitude(model_param)
 
                     elif phot_type == "flux":
                         if binary:
                             from species.util.model_util import binary_to_single
 
                             param_0 = binary_to_single(model_param, 0)
-                            mcmc_phot_0, _ = readmodel.get_flux(param_0)
+                            posterior_phot_0, _ = readmodel.get_flux(param_0)
 
                             param_1 = binary_to_single(model_param, 1)
-                            mcmc_phot_1, _ = readmodel.get_flux(param_1)
+                            posterior_phot_1, _ = readmodel.get_flux(param_1)
 
                             # Weighted flux of two spectra for atmospheric asymmetries
                             # Or simply the same in case of an actual binary system
 
                             if "spec_weight" in model_param:
-                                mcmc_phot[i] = (
-                                    model_param["spec_weight"] * mcmc_phot_0
-                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                posterior_phot[i] = (
+                                    model_param["spec_weight"] * posterior_phot_0
+                                    + (1.0 - model_param["spec_weight"])
+                                    * posterior_phot_1
                                 )
 
                             else:
-                                mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
+                                posterior_phot[i] = posterior_phot_0 + posterior_phot_1
 
                         else:
-                            mcmc_phot[i], _ = readmodel.get_flux(model_param)
+                            posterior_phot[i], _ = readmodel.get_flux(model_param)
 
             elif model_type == "calibration":
                 if phot_type == "magnitude":
                     app_mag, _ = readcalib.get_magnitude(model_param=model_param)
-                    mcmc_phot[i] = app_mag[0]
+                    posterior_phot[i] = app_mag[0]
 
                 elif phot_type == "flux":
-                    mcmc_phot[i], _ = readcalib.get_flux(model_param=model_param)
+                    posterior_phot[i], _ = readcalib.get_flux(model_param=model_param)
 
         if phot_type == "flux":
             from species.util.data_util import convert_units
@@ -3142,14 +3144,72 @@ class Database:
             read_filt = ReadFilter(filter_name)
             filt_wavel = read_filt.mean_wavelength()
 
-            wavel_ones = np.full(mcmc_phot.size, filt_wavel)
-            data_in = np.column_stack([wavel_ones, mcmc_phot])
+            wavel_ones = np.full(posterior_phot.size, filt_wavel)
+            data_in = np.column_stack([wavel_ones, posterior_phot])
 
             data_out = convert_units(data_in, ("um", flux_units), convert_from=False)
 
-            mcmc_phot = data_out[:, 1]
+            posterior_phot = data_out[:, 1]
 
-        return mcmc_phot
+        return posterior_phot
+
+    @beartype
+    def get_mcmc_spectra(
+        self,
+        tag: str,
+        random: Optional[int] = None,
+        wavel_range: Optional[Union[Tuple[Real, Real], str]] = None,
+        spec_res: Optional[Real] = None,
+        wavel_resample: Optional[np.ndarray] = None,
+    ) -> Union[
+        Union[List[ModelBox], List[SpectrumBox]],
+        Tuple[List[ModelBox], List[ModelBox], List[ModelBox]],
+    ]:
+        """
+        Deprecated alias for :meth:`get_posterior_spectra`.
+        """
+
+        warnings.warn(
+            "'get_mcmc_spectra' is deprecated. Use " "'get_posterior_spectra' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self.get_posterior_spectra(
+            tag=tag,
+            random=random,
+            wavel_range=wavel_range,
+            spec_res=spec_res,
+            wavel_resample=wavel_resample,
+        )
+
+    @beartype
+    def get_mcmc_photometry(
+        self,
+        tag: str,
+        filter_name: str,
+        random: Optional[int] = None,
+        phot_type: str = "magnitude",
+        flux_units: str = "W m-2 um-1",
+    ) -> np.ndarray:
+        """
+        Deprecated alias for :meth:`get_posterior_photometry`.
+        """
+
+        warnings.warn(
+            "'get_mcmc_photometry' is deprecated. Use "
+            "'get_posterior_photometry' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self.get_posterior_photometry(
+            tag=tag,
+            filter_name=filter_name,
+            random=random,
+            phot_type=phot_type,
+            flux_units=flux_units,
+        )
 
     @beartype
     def get_object(

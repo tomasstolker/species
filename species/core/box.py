@@ -3,18 +3,16 @@ Module with the  ``Box`` classes and ``create_box`` function.
 """
 
 import warnings
-
 from numbers import Real
 
 import numpy as np
-
-from beartype import beartype
 from beartype.typing import List, Tuple, Union
 from scipy.signal import savgol_filter
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.util.data_util import convert_units
+from species.util.fit_util import get_vary_indices
 from species.util.spec_util import smooth_spectrum
 
 
@@ -453,6 +451,18 @@ class SamplesBox(Box):
         self.attributes = None
         self.uniform_priors = None
         self.normal_priors = None
+
+    @property
+    def vary_index(self):
+        return get_vary_indices(self.samples)
+
+    @property
+    def vary_samples(self):
+        return self.samples[..., self.vary_index].copy()
+
+    @property
+    def vary_parameters(self):
+        return self.parameters[self.vary_index]
 
 
 class SpectrumBox(Box):
