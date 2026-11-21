@@ -38,6 +38,7 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm, truncnorm
 
 from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_isochrone import ReadIsochrone
 from species.read.read_model import ReadModel
 from species.read.read_object import ReadObject
 from species.read.read_planck import ReadPlanck
@@ -103,6 +104,7 @@ class FitModel:
         normal_prior: Optional[Dict[str, Tuple[Real, Real]]] = None,
         ext_model: Optional[str] = None,
         binary_prior: bool = False,
+        evolution_model: Optional[str] = None,
     ) -> None:
         """
         Parameters
@@ -532,6 +534,15 @@ class FitModel:
             applied such that the :math:`T_\\mathrm{eff}` and
             :math:`R` of the primary object will be larger than
             those parameters of the secondary object.
+        evolution_model : str, None
+            The tag of the evolution model to use as a physically consistent
+            prior (e.g., ``'sonora-bobcat'`` or ``'baraffe'``). When provided,
+            the ``age`` and ``mass`` parameters should be included in ``bounds``
+            and/or ``normal_prior`` to be sampled during the fit. The
+            isochrone will be used to automatically derive Teff, logg, and
+            radius from the sampled age and mass. For binary systems, both
+            stars will be constrained to the same age. The evolution prior
+            will reject samples that fall outside the evolutionary tracks.
 
         Returns
         -------
@@ -573,6 +584,11 @@ class FitModel:
         self.binary_prior = binary_prior
         self.ext_model = ext_model
 
+        if evolution_model is not None:
+            self.read_iso = ReadIsochrone(evolution_model, verbose=False)
+        else:
+            self.read_iso = None
+
         if fit_corr is None:
             self.fit_corr = []
         else:
@@ -585,6 +601,17 @@ class FitModel:
             self.normal_prior = {}
         else:
             self.normal_prior = normal_prior
+
+        # Detect binary system from separate mass priors
+
+        if self.read_iso is not None:
+            if "mass" in self.bounds:
+                if isinstance(self.bounds["mass"][0], (tuple, list)):
+                    self.binary = True
+
+            if "mass" in self.normal_prior:
+                if isinstance(self.normal_prior["mass"][0], (tuple, list)):
+                    self.binary = True
 
         # Models that do not require a grid interpolation
 
@@ -733,39 +760,37 @@ class FitModel:
                                 bounds_grid[key][1],
                             )
 
+                    # Check the bounds of the binary components
+
                     if self.binary:
                         for i in range(2):
-                            if self.bounds[f"{key}_{i}"][0] < bounds_grid[key][0]:
-                                warnings.warn(
-                                    f"The lower bound on {key}_{i} "
-                                    f"({self.bounds[f'{key}_{i}'][0]}) "
-                                    f"is smaller than the lower bound "
-                                    f"from the available {self.model} "
-                                    f"model grid ({bounds_grid[key][0]}). "
-                                    f"The lower bound of the {key}_{i} "
-                                    f"prior will be adjusted to "
-                                    f"{bounds_grid[key][0]}."
-                                )
-                                self.bounds[f"{key}_{i}"] = (
-                                    bounds_grid[key][0],
-                                    self.bounds[f"{key}_{i}"][1],
+                            param = f"{key}_{i}"
+
+                            if param not in self.bounds:
+                                continue
+
+                            lower, upper = self.bounds[param]
+                            grid_min, grid_max = bounds_grid[key]
+
+                            new_lower = max(lower, grid_min)
+                            new_upper = min(upper, grid_max)
+
+                            if new_lower > new_upper:
+                                raise ValueError(
+                                    f"The bounds of '{param}' ({lower}, {upper}) "
+                                    f"do not overlap with the atmospheric "
+                                    f"model grid ({grid_min}, {grid_max})."
                                 )
 
-                            if self.bounds[f"{key}_{i}"][1] > bounds_grid[key][1]:
+                            if new_lower != lower or new_upper != upper:
                                 warnings.warn(
-                                    f"The upper bound on {key}_{i} "
-                                    f"({self.bounds[f'{key}_{i}'][0]}) "
-                                    f"is larger than the upper bound "
-                                    f"from the available {self.model} "
-                                    f"model grid ({bounds_grid[key][1]}). "
-                                    f"The upper bound of the {key}_{i} "
-                                    f"prior will be adjusted to "
-                                    f"{bounds_grid[key][1]}."
+                                    f"The bounds of '{param}' ({lower}, {upper}) "
+                                    f"exceed the atmospheric model grid "
+                                    f"({grid_min}, {grid_max}). "
+                                    f"Adjusting to ({new_lower}, {new_upper})."
                                 )
-                                self.bounds[f"{key}_{i}"] = (
-                                    self.bounds[f"{key}_{i}"][0],
-                                    bounds_grid[key][1],
-                                )
+
+                                self.bounds[param] = (new_lower, new_upper)
 
             else:
                 # Set all parameter boundaries to the grid boundaries
@@ -785,7 +810,10 @@ class FitModel:
                 self.modelpar.append("log_flux_scaling")
 
             else:
-                self.modelpar.append("radius")
+                # Only add radius if not using evolution prior
+                # (evolution prior provides radius from isochrone)
+                if self.read_iso is None:
+                    self.modelpar.append("radius")
 
                 if self.binary:
                     if "parallax" in self.bounds:
@@ -1227,23 +1255,139 @@ class FitModel:
                         else:
                             self.modelpar.append(param_spec)
 
-        # Get the parameter order if interpolate_grid is used
+        # Add age and mass parameters for evolution prior
+
+        if self.read_iso is not None:
+
+            # Get the age and mass ranges of the evolution grid
+
+            grid_points = self.read_iso.get_points()
+
+            # Cache atmospheric grid bounds
+
+            self.atmo_bounds = None
+
+            if self.model not in self.non_interp_model:
+                self.atmo_bounds = ReadModel(self.model).get_bounds()
+
+            # Initialize the evolutionary interpolator
+
+            self.read_iso.get_isochrone(
+                age=grid_points["age"][0],
+                masses=np.array([grid_points["mass"][0]]),
+                param_interp=["teff", "logg", "radius"],
+            )
+
+            for param in ("age", "mass"):
+                grid_min = np.min(grid_points[param])
+                grid_max = np.max(grid_points[param])
+
+                if param in self.bounds:
+
+                    # Handle separate mass bounds for binary components
+
+                    if self.binary and param == "mass":
+                        param_bounds = self.bounds[param]
+                    else:
+                        param_bounds = [self.bounds[param]]
+
+                    new_bounds = []
+
+                    for lower, upper in param_bounds:
+                        new_lower = max(lower, grid_min)
+                        new_upper = min(upper, grid_max)
+
+                        if new_lower >= new_upper:
+                            raise ValueError(
+                                f"The bounds of '{param}' ({lower}, {upper}) "
+                                f"do not overlap with the evolution grid "
+                                f"range ({grid_min}, {grid_max})."
+                            )
+
+                        if new_lower != lower or new_upper != upper:
+                            warnings.warn(
+                                f"The bounds of '{param}' ({lower}, {upper}) "
+                                f"exceed the evolution grid range "
+                                f"({grid_min}, {grid_max}). "
+                                f"Adjusting to ({new_lower}, {new_upper}).",
+                            )
+
+                        new_bounds.append((new_lower, new_upper))
+
+                    # Preserve the original bounds structure
+
+                    if self.binary and param == "mass":
+                        self.bounds[param] = new_bounds
+                    else:
+                        self.bounds[param] = new_bounds[0]
+
+            # Add age parameter
+
+            if "age" in self.bounds or "age" in self.normal_prior:
+                self.modelpar.append("age")
+
+            else:
+                raise ValueError(
+                    "When using evolution_prior, 'age' must be "
+                    "included in 'bounds' or 'normal_prior'."
+                )
+
+            # Add mass parameters
+
+            if self.binary:
+                if "mass" in self.bounds or "mass" in self.normal_prior:
+                    self.modelpar.append("mass_0")
+                    self.modelpar.append("mass_1")
+
+                    if "mass" in self.bounds:
+                        self.bounds["mass_0"] = self.bounds["mass"][0]
+                        self.bounds["mass_1"] = self.bounds["mass"][1]
+                        del self.bounds["mass"]
+
+                    if "mass" in self.normal_prior:
+                        self.normal_prior["mass_0"] = self.normal_prior["mass"][0]
+                        self.normal_prior["mass_1"] = self.normal_prior["mass"][1]
+                        del self.normal_prior["mass"]
+
+                else:
+                    raise ValueError(
+                        "When using evolution_model with a binary system, "
+                        "'mass' must be included in 'bounds' or 'normal_prior'."
+                    )
+
+            else:
+                if "mass" in self.bounds or "mass" in self.normal_prior:
+                    self.modelpar.append("mass")
+
+                else:
+                    raise ValueError(
+                        "When using evolution_model, 'mass' must be "
+                        "included in 'bounds' or 'normal_prior'."
+                    )
+
+        # Get the parameter order for atmospheric interpolation
 
         if self.model not in self.non_interp_model:
             readmodel = ReadModel(self.model)
-            self.param_interp = readmodel.get_parameters()
+            model_params = readmodel.get_parameters()
 
-            if self.binary:
-                param_tmp = self.param_interp.copy()
+            self.param_interp = []
 
-                self.param_interp = []
-                for item in param_tmp:
-                    if f"{item}_0" in self.modelpar and f"{item}_1" in self.modelpar:
-                        self.param_interp.append(f"{item}_0")
-                        self.param_interp.append(f"{item}_1")
+            for param in model_params:
+                if self.binary and (
+                    (self.read_iso is not None and param in ("teff", "logg"))
+                    or (f"{param}_0" in self.bounds and f"{param}_1" in self.bounds)
+                    or (f"{param}_0" in self.modelpar and f"{param}_1" in self.modelpar)
+                    or (
+                        f"{param}_0" in self.normal_prior
+                        and f"{param}_1" in self.normal_prior
+                    )
+                ):
+                    self.param_interp.append(f"{param}_0")
+                    self.param_interp.append(f"{param}_1")
 
-                    else:
-                        self.param_interp.append(item)
+                else:
+                    self.param_interp.append(param)
 
         # Include blackbody disk
 
@@ -1447,6 +1591,18 @@ class FitModel:
         if "veil_ref" in self.bounds:
             self.modelpar.append("veil_ref")
 
+        # Remove atmospheric parameters that are derived from
+        # the evolution model instead of being fitted
+
+        if self.read_iso is not None:
+            for param in ("teff", "logg", "radius"):
+                for name in (param, f"{param}_0", f"{param}_1"):
+                    if name in self.modelpar:
+                        self.modelpar.remove(name)
+
+                    self.bounds.pop(name, None)
+                    self.normal_prior.pop(name, None)
+
         # Interpolate filters of flux ratio priors
 
         self.flux_ratio = {}
@@ -1610,6 +1766,84 @@ class FitModel:
                     self.weights[filter_item] = read_filt.filter_fwhm()
 
                 print(f"   - {filter_item} = {self.weights[filter_item]:.2e}")
+
+    @beartype
+    def _check_evolution_prior(
+        self, all_param: Dict[str, Real]
+    ) -> Tuple[Dict[str, Real], Real]:
+        """
+        Derive Teff, logg, and radius from the evolutionary model.
+
+        The interpolation objects are initialized once during
+        ``FitModel`` initialization and reused for each
+        likelihood evaluation.
+        """
+
+        age = all_param.get("age")
+
+        if age is None:
+            return all_param, -np.inf
+
+        # Get the masses of the stellar components
+
+        if self.binary:
+            masses = [
+                all_param.get("mass_0"),
+                all_param.get("mass_1"),
+            ]
+        else:
+            masses = [all_param.get("mass")]
+
+        if any(mass is None for mass in masses):
+            return all_param, -np.inf
+
+        # Interpolation points: (age, mass)
+
+        points = np.column_stack(
+            (
+                np.full(len(masses), age),
+                np.asarray(masses),
+            )
+        )
+
+        # Interpolate the evolutionary parameters
+
+        teff = self.read_iso.teff_interp(points)
+        logg = self.read_iso.logg_interp(points)
+        radius = self.read_iso.radius_interp(points)
+
+        # Reject invalid interpolation results
+
+        if not (
+            np.all(np.isfinite(teff))
+            and np.all(np.isfinite(logg))
+            and np.all(np.isfinite(radius))
+        ):
+            return all_param, -np.inf
+
+        # Check atmospheric model grid boundaries
+
+        if self.atmo_bounds is not None:
+            for param, values in (("teff", teff), ("logg", logg)):
+                lower, upper = self.atmo_bounds[param]
+
+                if np.any((values < lower) | (values > upper)):
+                    return all_param, -np.inf
+
+        # Add derived parameters to the dictionary
+
+        if self.binary:
+            for idx in range(2):
+                all_param[f"teff_{idx}"] = teff[idx]
+                all_param[f"logg_{idx}"] = logg[idx]
+                all_param[f"radius_{idx}"] = radius[idx]
+
+        else:
+            all_param["teff"] = teff[0]
+            all_param["logg"] = logg[0]
+            all_param["radius"] = radius[0]
+
+        return all_param, 0.0
 
     @beartype
     def _prior_transform(
@@ -1776,6 +2010,14 @@ class FitModel:
                     ):
                         return -np.inf
 
+        # Check evolution prior constraint
+
+        if self.read_iso is not None:
+            all_param, iso_check = self._check_evolution_prior(all_param)
+
+            if not np.isfinite(iso_check):
+                return -np.inf
+
         # Check if the primary star has a higher Teff and larger R
 
         if self.binary and self.binary_prior:
@@ -1791,6 +2033,7 @@ class FitModel:
 
         if self.param_interp is not None:
             param_dict = {}
+
             for param_item in self.param_interp:
                 param_dict[param_item] = all_param[param_item]
 
@@ -1804,7 +2047,7 @@ class FitModel:
         # Add uniform priors for non-mandatory parameters
         # to the log-likelihood function
 
-        if "mass" in self.bounds:
+        if "mass" in self.bounds and self.read_iso is None:
             if "logg" in all_param and "radius" in all_param:
                 mass = logg_to_mass(all_param["logg"], all_param["radius"])
 
@@ -1829,7 +2072,7 @@ class FitModel:
         # to the log-likelihood function
 
         for prior_key, prior_value in self.normal_prior.items():
-            if prior_key == "mass":
+            if prior_key == "mass" and self.read_iso is None:
                 if "logg" in all_param and "radius" in all_param:
                     mass = logg_to_mass(all_param["logg"], all_param["radius"])
 
@@ -1853,6 +2096,11 @@ class FitModel:
                     )
 
             elif self.binary and prior_key in ["mass_0", "mass_1"]:
+                # Skip mass prior calculation if using evolution
+                # prior (mass is already a free parameter)
+                if self.read_iso is not None:
+                    continue
+
                 bin_idx = prior_key[-1]
 
                 if f"logg_{bin_idx}" in all_param and f"radius_{bin_idx}" in all_param:
@@ -2829,6 +3077,8 @@ class FitModel:
 
             return self._lnlike_func(params)
 
+        # Run the PyMultiNest sampler
+
         pymultinest.run(
             _lnlike_multinest,
             _lnprior_multinest,
@@ -2839,7 +3089,8 @@ class FitModel:
             **kwargs_multinest,
         )
 
-        # Create the Analyzer object
+        # Create the PyMultiNest Analyzer object
+
         analyzer = pymultinest.analyse.Analyzer(
             len(self.modelpar),
             outputfiles_basename=output,
@@ -2847,16 +3098,19 @@ class FitModel:
         )
 
         # Get a dictionary with the ln(Z) and its errors, the
-        # individual modes and their parameters quantiles of
+        # individual modes and their parameter quantiles of
         # the parameter posteriors
+
         sampling_stats = analyzer.get_stats()
 
         # Nested sampling log-evidence
+
         self.ln_z = sampling_stats["nested sampling global log-evidence"]
         self.ln_z_error = sampling_stats["nested sampling global log-evidence error"]
         print(f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}")
 
         # Nested importance sampling log-evidence
+
         imp_ln_z = sampling_stats["nested importance sampling global log-evidence"]
         imp_ln_z_error = sampling_stats[
             "nested importance sampling global log-evidence error"
@@ -2875,17 +3129,96 @@ class FitModel:
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         param_check = {}
+
         for param_idx, param_item in enumerate(best_params["parameters"]):
             param_check[self.modelpar[param_idx]] = param_item
+
             if -0.1 < param_item < 0.1:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2e}")
             else:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
 
-        # Check nearest grid points
+        # Add fixed parameters to the best-fit dictionary
 
-        for param_key, param_value in self.fix_param.items():
-            param_check[param_key] = param_value
+        param_check.update(self.fix_param)
+
+        # Get derived parameters for the maximum-likelihood sample
+
+        if self.read_iso is not None:
+            self._check_evolution_prior(param_check)
+
+            if self.binary:
+                derived_params = (
+                    "teff_0",
+                    "logg_0",
+                    "radius_0",
+                    "teff_1",
+                    "logg_1",
+                    "radius_1",
+                )
+            else:
+                derived_params = ("teff", "logg", "radius")
+
+            for param in derived_params:
+                print(f"   - {param} = {param_check[param]:.2f}")
+
+        # Get the posterior samples
+
+        post_samples = analyzer.get_equal_weighted_posterior()
+
+        # Create list with the spectrum labels that are used
+        # for fitting an additional scaling parameter
+
+        spec_labels = []
+
+        for spec_item in self.spectrum:
+            if f"scaling_{spec_item}" in self.bounds:
+                spec_labels.append(f"scaling_{spec_item}")
+
+        # Samples and ln(L)
+
+        ln_prob = post_samples[:, -1]
+        samples = post_samples[:, :-1]
+
+        # Add derived teff, logg, and radius from the evolution prior
+        # to the posterior samples
+
+        if self.read_iso is not None:
+
+            # Determine the derived parameter names
+
+            if self.binary:
+                derived_params = (
+                    "teff_0",
+                    "logg_0",
+                    "radius_0",
+                    "teff_1",
+                    "logg_1",
+                    "radius_1",
+                )
+            else:
+                derived_params = ("teff", "logg", "radius")
+
+            # Calculate derived parameters for each posterior sample
+
+            derived_samples = []
+
+            for sample in samples:
+                all_param = dict(zip(self.modelpar, sample))
+                all_param.update(self.fix_param)
+
+                self._check_evolution_prior(all_param)
+
+                derived_samples.append([all_param[param] for param in derived_params])
+
+            # Append derived parameters to the posterior samples
+
+            derived_samples = np.asarray(derived_samples)
+
+            samples = np.column_stack((samples, derived_samples))
+            self.modelpar.extend(derived_params)
+
+        # Check nearest grid points
 
         if self.binary:
             param_0 = binary_to_single(param_check, 0)
@@ -2897,24 +3230,7 @@ class FitModel:
         else:
             check_nearest_spec(self.model, param_check)
 
-        # Get the posterior samples
-
-        post_samples = analyzer.get_equal_weighted_posterior()
-
-        # Create list with the spectrum labels that are used
-        # for fitting an additional scaling parameter
-
-        spec_labels = []
-        for spec_item in self.spectrum:
-            if f"scaling_{spec_item}" in self.bounds:
-                spec_labels.append(f"scaling_{spec_item}")
-
-        # Samples and ln(L)
-
-        ln_prob = post_samples[:, -1]
-        samples = post_samples[:, :-1]
-
-        # Adding the fixed parameters to the samples
+        # Add the fixed parameters to the samples
 
         for param_key, param_value in self.fix_param.items():
             self.modelpar.append(param_key)
@@ -3199,6 +3515,83 @@ class FitModel:
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)
+
+        # Add derived teff and logg from evolution prior to samples
+
+        if self.read_iso is not None:
+            # Reconstruct all_param for each sample to get derived teff/logg
+            param_idx = {param: idx for idx, param in enumerate(self.modelpar)}
+
+            if self.binary:
+                derived_teff_0 = []
+                derived_logg_0 = []
+                derived_radius_0 = []
+                derived_teff_1 = []
+                derived_logg_1 = []
+                derived_radius_1 = []
+
+                for sample in samples:
+                    all_param = {
+                        self.modelpar[i]: sample[i] for i in range(len(self.modelpar))
+                    }
+                    self._check_evolution_prior(all_param)
+                    derived_teff_0.append(all_param.get("teff_0", np.nan))
+                    derived_logg_0.append(all_param.get("logg_0", np.nan))
+                    derived_radius_0.append(all_param.get("radius_0", np.nan))
+                    derived_teff_1.append(all_param.get("teff_1", np.nan))
+                    derived_logg_1.append(all_param.get("logg_1", np.nan))
+                    derived_radius_1.append(all_param.get("radius_1", np.nan))
+
+                samples = np.append(
+                    samples, np.array(derived_teff_0)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("teff_0")
+                samples = np.append(
+                    samples, np.array(derived_logg_0)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("logg_0")
+                samples = np.append(
+                    samples, np.array(derived_radius_0)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("radius_0")
+                samples = np.append(
+                    samples, np.array(derived_teff_1)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("teff_1")
+                samples = np.append(
+                    samples, np.array(derived_logg_1)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("logg_1")
+                samples = np.append(
+                    samples, np.array(derived_radius_1)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("radius_1")
+            else:
+                derived_teff = []
+                derived_logg = []
+                derived_radius = []
+
+                for sample in samples:
+                    all_param = {
+                        self.modelpar[i]: sample[i] for i in range(len(self.modelpar))
+                    }
+                    self._check_evolution_prior(all_param)
+                    derived_teff.append(all_param.get("teff", np.nan))
+                    derived_logg.append(all_param.get("logg", np.nan))
+                    derived_radius.append(all_param.get("radius", np.nan))
+
+                samples = np.append(
+                    samples, np.array(derived_teff)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("teff")
+                samples = np.append(
+                    samples, np.array(derived_logg)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("logg")
+                samples = np.append(
+                    samples, np.array(derived_radius)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("radius")
 
         # Get the MPI rank of the process
 
@@ -3574,12 +3967,90 @@ class FitModel:
 
             samples = np.append(samples, app_param, axis=1)
 
+        # Add derived teff and logg from evolution prior to samples
+
+        if self.read_iso is not None:
+            # Reconstruct all_param for each sample to get derived teff/logg
+            param_idx = {param: idx for idx, param in enumerate(self.modelpar)}
+
+            if self.binary:
+                derived_teff_0 = []
+                derived_logg_0 = []
+                derived_radius_0 = []
+                derived_teff_1 = []
+                derived_logg_1 = []
+                derived_radius_1 = []
+
+                for sample in samples:
+                    all_param = {
+                        self.modelpar[i]: sample[i] for i in range(len(self.modelpar))
+                    }
+                    self._check_evolution_prior(all_param)
+                    derived_teff_0.append(all_param.get("teff_0", np.nan))
+                    derived_logg_0.append(all_param.get("logg_0", np.nan))
+                    derived_radius_0.append(all_param.get("radius_0", np.nan))
+                    derived_teff_1.append(all_param.get("teff_1", np.nan))
+                    derived_logg_1.append(all_param.get("logg_1", np.nan))
+                    derived_radius_1.append(all_param.get("radius_1", np.nan))
+
+                samples = np.append(
+                    samples, np.array(derived_teff_0)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("teff_0")
+                samples = np.append(
+                    samples, np.array(derived_logg_0)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("logg_0")
+                samples = np.append(
+                    samples, np.array(derived_radius_0)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("radius_0")
+                samples = np.append(
+                    samples, np.array(derived_teff_1)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("teff_1")
+                samples = np.append(
+                    samples, np.array(derived_logg_1)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("logg_1")
+                samples = np.append(
+                    samples, np.array(derived_radius_1)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("radius_1")
+            else:
+                derived_teff = []
+                derived_logg = []
+                derived_radius = []
+
+                for sample in samples:
+                    all_param = {
+                        self.modelpar[i]: sample[i] for i in range(len(self.modelpar))
+                    }
+                    self._check_evolution_prior(all_param)
+                    derived_teff.append(all_param.get("teff", np.nan))
+                    derived_logg.append(all_param.get("logg", np.nan))
+                    derived_radius.append(all_param.get("radius", np.nan))
+
+                samples = np.append(
+                    samples, np.array(derived_teff)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("teff")
+                samples = np.append(
+                    samples, np.array(derived_logg)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("logg")
+                samples = np.append(
+                    samples, np.array(derived_radius)[..., np.newaxis], axis=1
+                )
+                self.modelpar.append("radius")
+
         # Get the MPI rank of the process
 
         try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
         except ImportError:
             mpi_rank = 0

@@ -84,7 +84,7 @@ class FitEvolution:
             positive upper uncertainty, for example (10., -2., +1.).
             The order must match ``log_lum``. Use ``None`` for an
             object with no mass prior. A tuple (0., 0., sigma)
-            specifies a half-normal prior with scale sigma.
+            specifies a 1 sigma upper limit.
         radius_prior : tuple(float, float), list(tuple(float, float)), None
             Optional list with tuples that contain the radii (e.g.
             from and SED fit) and the related uncertainty for one
@@ -98,9 +98,10 @@ class FitEvolution:
             log-uniform priors. Fixing a parameter is possible by
             providing the same value as lower and upper boundary
             of the parameter (e.g. ``bounds={"mass_0": (5.0, 5.0)}``).
-            Use ``inflate_lbol0``, ``inflate_lbol1``, etc. for extra
-            independent scatter in log luminosity (dex). Its variance
-            is added to the measurement variance.
+            Use ``inflate_lbol0``, ``inflate_lbol1``, etc. to inflate
+            the uncertainties of ``log_lum`` by ``inflate_lbol0``, etc.
+            Its variance is added in quadrature to the measurement
+            variance provided with ``log_lum``.
         interp_method : str
             Interpolation method for the isochrone data. The argument
             should be either 'linear', for using a linear 2D
@@ -450,7 +451,7 @@ class FitEvolution:
             prior : tuple(float)
                 Central value, negative lower error, and positive upper
                 error. The special case (0, 0, sigma) specifies a
-                half-normal prior with scale sigma.
+                half-normal prior that is used for an upper limit.
             bounds : tuple(float)
                 Lower and upper bounds in physical units. The effective
                 lower bound is the larger of zero and the supplied bound.
@@ -463,7 +464,9 @@ class FitEvolution:
                 Quantile of the truncated prior at probability u.
             """
 
+            # sigma_minus should be a negative value
             center, sigma_minus, sigma_plus = prior
+
             lower, upper = bounds
             lower = max(0.0, lower)
 
@@ -480,9 +483,7 @@ class FitEvolution:
             if not (np.isfinite(sigma_plus) and sigma_plus > 0.0):
                 raise ValueError(f"Invalid upper prior width: {prior}")
 
-            if not one_sided and not (
-                np.isfinite(sigma_minus) and sigma_minus > 0.0
-            ):
+            if not one_sided and not (np.isfinite(sigma_minus) and sigma_minus > 0.0):
                 raise ValueError(f"Invalid lower prior width: {prior}")
 
             if u == 0.0:
@@ -526,26 +527,23 @@ class FitEvolution:
             if sigma_minus == sigma_plus:
                 return truncated_ppf(u, lower, upper, sigma_plus)
 
-            # Each half starts with 50% of the prior probability.
-            # erf gives the fraction of each half that survives
-            # the bounds of the truncation.
-            # Divide by sqrt(2) * sigma to match the Gaussian exponent
-            # -(x - center)**2 / (2 * sigma**2) to erf's integrand exp(-t**2).
+            # Each half contains 50% of the prior probability before
+            # truncation. Calculate the probability remaining within
+            # the bounds of each half.
 
-            left = erf((center - lower) / (np.sqrt(2.0) * sigma_minus))
-            right = erf((upper - center) / (np.sqrt(2.0) * sigma_plus))
+            left = norm.cdf(center, loc=center, scale=sigma_minus) - \
+                   norm.cdf(lower, loc=center, scale=sigma_minus)
 
-            # Normalize the surviving fractions to get the probability
-            # of drawing below the center in the truncated prior.
+            right = norm.cdf(upper, loc=center, scale=sigma_plus) - \
+                    norm.cdf(center, loc=center, scale=sigma_plus)
+
+            # Normalize to obtain the probability of sampling the left half.
 
             p_left = left / (left + right)
 
-            # Use p_left to select a side, then map that side's portion
-            # of the unit interval back to [0, 1] for its quantile.
+            # Select a half and rescale u to [0, 1] for its inverse CDF.
 
             if u < p_left:
-                # Rescale u from [0, p_left) to [0, 1) to get the
-                # quantile within the truncated left half.
                 return truncated_ppf(u / p_left, lower, center, sigma_minus)
 
             return truncated_ppf(
@@ -582,7 +580,9 @@ class FitEvolution:
             for param_idx, param_item in enumerate(self.model_par):
                 if param_item == "age" and self.age_prior is not None:
                     cube[param_idx] = bounded_normal_ppf(
-                        unit_cube[param_idx], self.age_prior, self.bounds.get(param_item, (0.0, np.inf))
+                        unit_cube[param_idx],
+                        self.age_prior,
+                        self.bounds.get(param_item, (0.0, np.inf)),
                     )
 
                 elif param_item.startswith("mass_") and (
@@ -595,7 +595,10 @@ class FitEvolution:
 
                     if inflate_key in cube_index:
                         infl_lo, infl_hi = self.bounds[inflate_key]
-                        inflation = infl_lo + (infl_hi - infl_lo) * unit_cube[cube_index[inflate_key]]
+                        inflation = (
+                            infl_lo
+                            + (infl_hi - infl_lo) * unit_cube[cube_index[inflate_key]]
+                        )
 
                     cube[param_idx] = bounded_normal_ppf(
                         unit_cube[param_idx],
@@ -607,7 +610,8 @@ class FitEvolution:
                 else:
                     cube[param_idx] = (
                         self.bounds[param_item][0]
-                        + (self.bounds[param_item][1] - self.bounds[param_item][0]) * cube[param_idx]
+                        + (self.bounds[param_item][1] - self.bounds[param_item][0])
+                        * cube[param_idx]
                     )
 
         @beartype
@@ -693,9 +697,10 @@ class FitEvolution:
                 # So only the radius prior needs to be applied
 
                 if self.radius_prior[planet_idx] is not None:
-                    chi_square += (
-                        self.radius_prior[planet_idx][0] - iso_box.radius[0]
-                    ) ** 2 / self.radius_prior[planet_idx][1] ** 2
+                    radius_obs, radius_sigma = self.radius_prior[planet_idx]
+
+                    chi_square += (radius_obs - iso_box.radius[0])**2 / radius_sigma**2
+                    chi_square += np.log(2.0 * np.pi * radius_sigma**2)
 
             if not np.isfinite(chi_square):
                 log_like = -np.inf
@@ -734,8 +739,8 @@ class FitEvolution:
         print(f"\nNested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
 
         # Nested importance sampling global log-evidence
-        ln_z = sampling_stats["nested importance sampling global log-evidence"]
-        ln_z_error = sampling_stats[
+        ln_z_imp = sampling_stats["nested importance sampling global log-evidence"]
+        ln_z_imp_error = sampling_stats[
             "nested importance sampling global log-evidence error"
         ]
         print(
@@ -770,10 +775,10 @@ class FitEvolution:
         if self.fix_param:
             samples_tmp = np.copy(samples)
             # Preserve the original sampled columns, including initial entropies.
-            self.model_par = [
-                *self.model_par,
-                *(key for key in self.fix_param if key not in cube_index),
-            ]
+
+            for key in self.fix_param:
+                if key not in cube_index:
+                    self.model_par.append(key)
 
             samples = np.zeros((samples.shape[0], len(self.model_par)))
 
@@ -866,52 +871,6 @@ class FitEvolution:
         #
         # samples = samples[~indices, :]
 
-        # Apply uncertainty inflation
-
-        log_lum_new = list(self.log_lum)
-        index_prob = np.argmax(ln_prob)
-
-        for planet_idx, (log_lum, sigma_obs) in enumerate(self.log_lum):
-            inflate_key = f"inflate_lbol{planet_idx}"
-
-            # Fixed parameters are included in the sample columns.
-            if inflate_key in cube_index:
-                sigma_extra = samples[index_prob, cube_index[inflate_key]]
-                log_lum_new[planet_idx] = (log_lum, np.hypot(sigma_obs, sigma_extra))
-
-        mass_prior_new = list(self.mass_prior)
-        for planet_idx in range(self.n_planets):
-            inflate_key = f"inflate_mass{planet_idx}"
-            if inflate_key in cube_index and self.mass_prior[planet_idx] is not None:
-                sigma_add = samples[index_prob, cube_index[inflate_key]]
-
-                center, err_minus, err_plus = self.mass_prior[planet_idx]
-                if not (center == 0.0 and err_minus == 0.0):
-                    err_minus -= sigma_add
-                mass_prior_new[planet_idx] = (center, err_minus, err_plus + sigma_add)
-
-        # Set radius_prior to posterior value if argument was None
-
-        # for planet_idx, planet_item in enumerate(self.radius_prior):
-        #     if planet_item is None:
-        #         radius_samples = samples[:, cube_index[f"radius_{planet_idx}"]]
-        #         self.radius_prior[planet_idx] = (
-        #             np.mean(radius_samples),
-        #             np.std(radius_samples),
-        #         )
-
-        # Adjust mass_prior to posterior value
-
-        # for i, item in enumerate(self.mass_prior):
-        #     mass_samples = samples[:, cube_index[f"mass_{i}"]]
-        #     self.mass_prior[i] = (np.mean(mass_samples), np.std(mass_samples))
-
-        # Adjust radius_prior to posterior value
-
-        # for i, item in enumerate(self.radius_prior):
-        #     radius_samples = samples[:, cube_index[f"radius_{i}"]]
-        #     self.radius_prior[i] = (np.mean(radius_samples), np.std(radius_samples))
-
         # Set age_prior to NaN if no prior was provided
 
         if self.age_prior is None:
@@ -920,25 +879,6 @@ class FitEvolution:
         elif "age" in self.fix_param:
             self.age_prior = (self.fix_param["age"], 0.0)
 
-        # Keep all stored mass-prior rows as triplets.
-        for planet_idx, planet_item in enumerate(self.mass_prior):
-            if f"mass_{planet_idx}" in self.fix_param:
-                mass_prior_new[planet_idx] = (self.fix_param[f"mass_{planet_idx}"], 0.0, 0.0)
-            elif planet_item is None:
-                mass_prior_new[planet_idx] = (np.nan, np.nan, np.nan)
-
-        # Set radius_prior to NaN if no prior was provided
-
-        for planet_idx, planet_item in enumerate(self.radius_prior):
-            if f"radius_{planet_idx}" in self.fix_param:
-                self.radius_prior[planet_idx] = (
-                    self.fix_param[f"radius_{planet_idx}"],
-                    0.0,
-                )
-
-            elif planet_item is None:
-                self.radius_prior[planet_idx] = np.nan
-
         # Dictionary with attributes that will be stored
 
         attr_dict = {
@@ -946,9 +886,9 @@ class FitEvolution:
             "model_name": self.evolution_model,
             "ln_evidence": (ln_z, ln_z_error),
             "n_planets": self.n_planets,
-            "log_lum": log_lum_new,
+            "log_lum": self.log_lum,
             "age_prior": self.age_prior,
-            "mass_prior": mass_prior_new,
+            "mass_prior": self.mass_prior,
             "radius_prior": self.radius_prior,
             "regular_grid": self.read_iso.regular_grid,
         }

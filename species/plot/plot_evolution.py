@@ -17,13 +17,14 @@ from species.read.read_isochrone import ReadIsochrone
 from species.util.core_util import print_section
 
 
-def _prior_summary(prior, posterior_samples):
+def _prior_summary(prior, samples):
     """Return a prior center and lower/upper error widths."""
 
-    prior = np.atleast_1d(np.asarray(prior, dtype=float))
+    prior = np.atleast_1d(np.array(prior))
 
     if prior.size == 0 or np.isnan(prior[0]):
-        quantiles = np.percentile(posterior_samples, [50.0, 16.0, 84.0])
+        quantiles = np.percentile(samples, [50.0, 16.0, 84.0])
+
         return (
             quantiles[0],
             quantiles[0] - quantiles[1],
