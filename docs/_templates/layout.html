@@ -1,0 +1,7 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  <link rel="icon" type="image/png" href="{{ pathto('_static/species_favicon_spec.png', 1) }}?v=2" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" href="{{ pathto('_static/species_favicon_spec-white.png', 1) }}?v=2" media="(prefers-color-scheme: dark)">
+{% endblock %}
